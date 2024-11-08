@@ -195,7 +195,7 @@ async fn main() -> anyhow::Result<()> {
     // curl -u "user-2" http://127.0.0.1:5000/basic_auth
     let basic_auth_app = Router::new()
         .route("/", get(|| async move { "basic auth index" }))
-        .route("/basic_auth", get(basic_auth))
+        .route("/show_basic_auth", get(basic_auth))
         .layer(basic_auth_authorization_layer)
         .route("/show_basic_auth_without_layer", get(basic_auth));
 
