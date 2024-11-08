@@ -44,7 +44,7 @@ jobs:
       - name: Format
         run: cargo fmt -- --check
 
-      - name: Clippy --all-features
+      - name: Clippy
         run: cargo clippy --all --all-features -- -D warnings
 
       - name: Test
