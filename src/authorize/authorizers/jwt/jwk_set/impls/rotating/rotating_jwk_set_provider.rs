@@ -106,7 +106,7 @@ impl<'a> JwkSetReadGuard<'a> {
     }
 }
 
-impl<'a> AsRef<JwkSet> for JwkSetReadGuard<'a> {
+impl AsRef<JwkSet> for JwkSetReadGuard<'_> {
     fn as_ref(&self) -> &JwkSet {
         self.0.as_ref()
     }
