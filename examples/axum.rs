@@ -33,7 +33,7 @@ use composable_tower_http::{
             },
         },
         extract::{
-            authorization_extractor::AuthorizationExtractor, authorized::Authorized,
+            authorized::Authorized, authorized_ext::AuthorizedExt,
             sealed_authorized::SealedAuthorized, validated_authorized::ValidatedAuthorized,
         },
         header::{
@@ -42,7 +42,7 @@ use composable_tower_http::{
             impls::default_header_extractor::DefaultHeaderExtractor,
         },
     },
-    extension::layer::{ExtensionLayer, ExtensionLayerExt},
+    extension::layer::ExtensionLayerExt,
     map::mapper::MapperExt,
     validate::{extract::validated_ext::ValidationExt, validator::Validator},
 };
@@ -117,16 +117,16 @@ async fn main() -> anyhow::Result<()> {
 
     tracing::info!(%jwks_uri, %iss);
 
-    let jwt_authorization_extractor =
-        AuthorizationExtractor::new(DefaultJwtAuthorizerBuilder::build::<Claims>(
-            DefaultBearerExtractor::new(),
-            RotatingJwkSetProvider::new(30, HttpJwkSetFetcher::new(jwks_uri, Client::new()))
-                .await
-                .context("Failed to create jwk set provider")?,
-            Validation::new().aud(&["account"]).iss(&[iss]),
-        ));
+    let jwt_authorization_extractor = DefaultJwtAuthorizerBuilder::build::<Claims>(
+        DefaultBearerExtractor::new(),
+        RotatingJwkSetProvider::new(30, HttpJwkSetFetcher::new(jwks_uri, Client::new()))
+            .await
+            .context("Failed to create jwk set provider")?,
+        Validation::new().aud(&["account"]).iss(&[iss]),
+    )
+    .authorized();
 
-    let jwt_authorization_layer = ExtensionLayer::new(jwt_authorization_extractor.clone());
+    let jwt_authorization_layer = jwt_authorization_extractor.clone().layer();
 
     let jwt_validation_authorization_email_verified_layer = {
         #[derive(Clone, Debug)]
@@ -172,21 +172,19 @@ async fn main() -> anyhow::Result<()> {
         .map(ApiKey::new)
         .collect();
 
-    let api_key_authorization_layer = AuthorizationExtractor::new(DefaultApiKeyAuthorizer::new(
-        DefaultHeaderExtractor::new("x-api-key"),
-        valid_api_keys,
-    ))
-    .layer();
+    let api_key_authorization_layer =
+        DefaultApiKeyAuthorizer::new(DefaultHeaderExtractor::new("x-api-key"), valid_api_keys)
+            .authorized()
+            .layer();
 
     let basic_auth_users: HashSet<BasicAuthUser> = [("user-1", "password-1"), ("user-2", "")]
         .into_iter()
         .map(Into::into)
         .collect();
 
-    let basic_auth_extractor = AuthorizationExtractor::new(DefaultBasicAuthAuthorizer::new(
-        DefaultBaiscAuthExtractor::new(),
-        basic_auth_users,
-    ));
+    let basic_auth_extractor =
+        DefaultBasicAuthAuthorizer::new(DefaultBaiscAuthExtractor::new(), basic_auth_users)
+            .authorized();
 
     let basic_auth_authorization_layer = basic_auth_extractor.clone().layer();
 
@@ -212,7 +210,7 @@ async fn main() -> anyhow::Result<()> {
             }
         }
 
-        ExtensionLayer::new(basic_auth_extractor.map_err(|_| BasicAuthError))
+        basic_auth_extractor.map_err(|_| BasicAuthError).layer()
     };
 
     let jwt_app = Router::new()
