@@ -13,6 +13,13 @@ impl<T> SealedAuthorized<T> {
     pub fn into_inner(self) -> T {
         self.0
     }
+
+    pub fn map<Fn, U>(self, map: Fn) -> SealedAuthorized<U>
+    where
+        Fn: FnOnce(T) -> U,
+    {
+        SealedAuthorized(map(self.0))
+    }
 }
 
 impl<T> Deref for SealedAuthorized<T> {
