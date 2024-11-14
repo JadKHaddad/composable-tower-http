@@ -117,3 +117,68 @@ pub enum RotatingJwkSetProvideError<F> {
     #[error("Failed to fetch JWK set: {0}")]
     Fetch(#[source] F),
 }
+
+#[cfg(test)]
+mod tests {
+    use std::time::Duration;
+
+    use jsonwebtoken::jwk::{
+        AlgorithmParameters, CommonParameters, Jwk, JwkSet, OctetKeyParameters, OctetKeyType,
+    };
+
+    use crate::authorize::authorizers::jwt::jwk_set::impls::rotating::jwk_set_fetcher::MockJwkSetFetcher;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn jwk_set_will_rotate() {
+        let mut jwk_set_fetcher = MockJwkSetFetcher::default();
+
+        jwk_set_fetcher
+            .expect_fetch_jwk_set()
+            .times(1)
+            .returning(|| Box::pin(async { Ok(JwkSet { keys: Vec::new() }) }));
+
+        jwk_set_fetcher
+            .expect_fetch_jwk_set()
+            .times(1)
+            .returning(|| {
+                Box::pin(async {
+                    Ok(JwkSet {
+                        keys: vec![Jwk {
+                            common: CommonParameters::default(),
+                            algorithm: AlgorithmParameters::OctetKey(OctetKeyParameters {
+                                key_type: OctetKeyType::Octet,
+                                value: String::new(),
+                            }),
+                        }],
+                    })
+                })
+            });
+
+        let jwks_time_to_live_in_seconds = 1;
+
+        let rotating_jwk_set_provider =
+            RotatingJwkSetProvider::new(jwks_time_to_live_in_seconds, jwk_set_fetcher)
+                .await
+                .expect("Failed to create rotating jwk set provider");
+
+        let on_creation_jwks = rotating_jwk_set_provider
+            .provide_jwk_set()
+            .await
+            .expect("Failed to get jwk set")
+            .as_ref()
+            .clone();
+
+        tokio::time::sleep(Duration::from_millis(2100)).await;
+
+        let current_jwks = rotating_jwk_set_provider
+            .provide_jwk_set()
+            .await
+            .expect("Failed to get jwk set")
+            .as_ref()
+            .clone();
+
+        assert_ne!(on_creation_jwks, current_jwks)
+    }
+}

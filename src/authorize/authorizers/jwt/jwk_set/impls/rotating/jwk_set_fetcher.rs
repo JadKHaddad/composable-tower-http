@@ -2,6 +2,7 @@ use std::future::Future;
 
 use jsonwebtoken::jwk::JwkSet;
 
+#[cfg_attr(test, mockall::automock(type Error=();))]
 pub trait JwkSetFetcher {
     type Error;
 
