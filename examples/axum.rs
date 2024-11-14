@@ -157,7 +157,7 @@ async fn main() -> anyhow::Result<()> {
         jwt_authorization_extractor
             .clone()
             .validated(EmailVerifiedValidator {})
-            .extension_layer()
+            .layer()
 
         // Or
 
@@ -176,7 +176,7 @@ async fn main() -> anyhow::Result<()> {
         DefaultHeaderExtractor::new("x-api-key"),
         valid_api_keys,
     ))
-    .extension_layer();
+    .layer();
 
     let basic_auth_users: HashSet<BasicAuthUser> = [("user-1", "password-1"), ("user-2", "")]
         .into_iter()
@@ -188,12 +188,12 @@ async fn main() -> anyhow::Result<()> {
         basic_auth_users,
     ));
 
-    let basic_auth_authorization_layer = basic_auth_extractor.clone().extension_layer();
+    let basic_auth_authorization_layer = basic_auth_extractor.clone().layer();
 
     let mapped_basic_auth_authorization_layer = basic_auth_extractor
         .clone()
         .map(|ex: SealedAuthorized<BasicAuthUser>| ex.map(|_| String::from("A user")))
-        .extension_layer();
+        .layer();
 
     let error_mapped_basic_auth_authorization_layer = {
         #[derive(Debug, Clone, thiserror::Error)]
