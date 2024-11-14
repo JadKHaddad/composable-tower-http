@@ -63,7 +63,7 @@ where
             .extractor
             .extract(headers)
             .await
-            .map_err(ValidateError::Authorize)?;
+            .map_err(ValidateError::Extract)?;
 
         self.validator
             .validate(&extracted)
@@ -76,8 +76,8 @@ where
 
 #[derive(Debug, thiserror::Error)]
 pub enum ValidateError<Ex, E> {
-    #[error("Authorization error: {0}")]
-    Authorize(#[source] Ex),
+    #[error("Extraction error: {0}")]
+    Extract(#[source] Ex),
     #[error("Validation error: {0}")]
     Validate(#[source] E),
 }
@@ -97,7 +97,7 @@ mod axum {
             tracing::warn!(err = %self, "Invalid");
 
             match self {
-                ValidateError::Authorize(err) => err.into_response(),
+                ValidateError::Extract(err) => err.into_response(),
                 ValidateError::Validate(err) => err.into_response(),
             }
         }
