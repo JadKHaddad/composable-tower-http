@@ -42,7 +42,7 @@ use composable_tower_http::{
             impls::default_header_extractor::DefaultHeaderExtractor,
         },
     },
-    extension::layer::ExtensionLayer,
+    extension::layer::{ExtensionLayer, ExtensionLayerExt},
     map::mapper::MapperExt,
     validate::{extract::validation_extractor::ValidationExtractor, validator::Validator},
 };
@@ -165,9 +165,11 @@ async fn main() -> anyhow::Result<()> {
         .map(ApiKey::new)
         .collect();
 
-    let api_key_authorization_layer = ExtensionLayer::new(AuthorizationExtractor::new(
-        DefaultApiKeyAuthorizer::new(DefaultHeaderExtractor::new("x-api-key"), valid_api_keys),
-    ));
+    let api_key_authorization_layer = AuthorizationExtractor::new(DefaultApiKeyAuthorizer::new(
+        DefaultHeaderExtractor::new("x-api-key"),
+        valid_api_keys,
+    ))
+    .extension_layer();
 
     let basic_auth_users: HashSet<BasicAuthUser> = [("user-1", "password-1"), ("user-2", "")]
         .into_iter()
@@ -179,13 +181,12 @@ async fn main() -> anyhow::Result<()> {
         basic_auth_users,
     ));
 
-    let basic_auth_authorization_layer = ExtensionLayer::new(basic_auth_extractor.clone());
+    let basic_auth_authorization_layer = basic_auth_extractor.clone().extension_layer();
 
-    let mapped_basic_auth_authorization_layer = ExtensionLayer::new(
-        basic_auth_extractor
-            .clone()
-            .map(|ex: SealedAuthorized<BasicAuthUser>| ex.map(|_| String::from("A user"))),
-    );
+    let mapped_basic_auth_authorization_layer = basic_auth_extractor
+        .clone()
+        .map(|ex: SealedAuthorized<BasicAuthUser>| ex.map(|_| String::from("A user")))
+        .extension_layer();
 
     let error_mapped_basic_auth_authorization_layer = {
         #[derive(Debug, Clone, thiserror::Error)]
