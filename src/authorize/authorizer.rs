@@ -122,15 +122,14 @@ where
     }
 }
 
-impl<A, Fn, T> Authorizer for ErrorMapper<A, Fn>
+impl<A, Fn, E> Authorizer for ErrorMapper<A, Fn>
 where
     A: Authorizer + Sync,
-    Fn: FnOnce(A::Error) -> T + Copy + Sync,
-    T: Clone + Send + Sync + 'static,
+    Fn: FnOnce(A::Error) -> E + Copy + Sync,
 {
     type Authorized = A::Authorized;
 
-    type Error = T;
+    type Error = E;
 
     #[tracing::instrument(skip_all)]
     async fn authorize(&self, headers: &HeaderMap) -> Result<Self::Authorized, Self::Error> {

@@ -123,7 +123,6 @@ impl<Ex, Fn, E> Extractor for ErrorMapper<Ex, Fn>
 where
     Ex: Extractor + Sync,
     Fn: FnOnce(Ex::Error) -> E + Copy + Sync,
-    E: Clone + Send + Sync,
 {
     type Extracted = Ex::Extracted;
 
