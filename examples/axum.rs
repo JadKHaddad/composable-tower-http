@@ -14,6 +14,7 @@ use anyhow::Context;
 use axum::{response::IntoResponse, routing::get, Json, Router};
 use composable_tower_http::{
     authorize::{
+        authorizer::AuthorizerExt,
         authorizers::{
             api_key::impls::{
                 api_key::ApiKey, default_api_key_authorizer::DefaultApiKeyAuthorizer,
@@ -33,8 +34,8 @@ use composable_tower_http::{
             },
         },
         extract::{
-            authorized::Authorized, authorized_ext::AuthorizedExt,
-            sealed_authorized::SealedAuthorized, validated_authorized::ValidatedAuthorized,
+            authorized::Authorized, sealed_authorized::SealedAuthorized,
+            validated_authorized::ValidatedAuthorized,
         },
         header::{
             basic_auth::impls::default_basic_auth_extractor::DefaultBaiscAuthExtractor,
@@ -43,8 +44,8 @@ use composable_tower_http::{
         },
     },
     extension::layer::ExtensionLayerExt,
-    map::mapper::MapperExt,
-    validate::{extract::validated_ext::ValidationExt, validator::Validator},
+    extract::extractor::ExtractorExt,
+    validate::validator::Validator,
 };
 use http::StatusCode;
 use reqwest::Client;
@@ -124,7 +125,7 @@ async fn main() -> anyhow::Result<()> {
             .context("Failed to create jwk set provider")?,
         Validation::new().aud(&["account"]).iss(&[iss]),
     )
-    .authorized();
+    .extracted();
 
     let jwt_authorization_layer = jwt_authorization_extractor.clone().layer();
 
@@ -174,7 +175,7 @@ async fn main() -> anyhow::Result<()> {
 
     let api_key_authorization_layer =
         DefaultApiKeyAuthorizer::new(DefaultHeaderExtractor::new("x-api-key"), valid_api_keys)
-            .authorized()
+            .extracted()
             .layer();
 
     let basic_auth_users: HashSet<BasicAuthUser> = [("user-1", "password-1"), ("user-2", "")]
@@ -184,7 +185,7 @@ async fn main() -> anyhow::Result<()> {
 
     let basic_auth_extractor =
         DefaultBasicAuthAuthorizer::new(DefaultBaiscAuthExtractor::new(), basic_auth_users)
-            .authorized();
+            .extracted();
 
     let basic_auth_authorization_layer = basic_auth_extractor.clone().layer();
 

@@ -6,5 +6,4 @@
 pub mod authorize;
 pub mod extension;
 pub mod extract;
-pub mod map;
 pub mod validate;
