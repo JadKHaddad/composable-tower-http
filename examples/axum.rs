@@ -42,8 +42,9 @@ use composable_tower_http::{
             impls::default_header_extractor::DefaultHeaderExtractor,
         },
     },
-    extension::layer::ExtensionLayer,
-    validate::{extract::validation_extractor::ValidationExtractor, validator::Validator},
+    extension::layer::{ExtensionLayer, ExtensionLayerExt},
+    map::mapper::MapperExt,
+    validate::{extract::validated_ext::ValidationExt, validator::Validator},
 };
 use http::StatusCode;
 use reqwest::Client;
@@ -99,6 +100,10 @@ async fn basic_auth(Authorized(user): Authorized<BasicAuthUser>) -> impl IntoRes
     format!("You are: {}", user.username)
 }
 
+async fn mapped_basic_auth(Authorized(mapped_user): Authorized<String>) -> impl IntoResponse {
+    format!("You are: {}", mapped_user)
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     init()?;
@@ -149,10 +154,17 @@ async fn main() -> anyhow::Result<()> {
             }
         }
 
-        ExtensionLayer::new(ValidationExtractor::new(
-            jwt_authorization_extractor.clone(),
-            EmailVerifiedValidator {},
-        ))
+        jwt_authorization_extractor
+            .clone()
+            .validated(EmailVerifiedValidator {})
+            .extension_layer()
+
+        // Or
+
+        // ExtensionLayer::new(ValidationExtractor::new(
+        //     jwt_authorization_extractor.clone(),
+        //     EmailVerifiedValidator {},
+        // ))
     };
 
     let valid_api_keys: HashSet<ApiKey> = ["api-key-1", "api-key-2"]
@@ -160,18 +172,48 @@ async fn main() -> anyhow::Result<()> {
         .map(ApiKey::new)
         .collect();
 
-    let api_key_authorization_layer = ExtensionLayer::new(AuthorizationExtractor::new(
-        DefaultApiKeyAuthorizer::new(DefaultHeaderExtractor::new("x-api-key"), valid_api_keys),
-    ));
+    let api_key_authorization_layer = AuthorizationExtractor::new(DefaultApiKeyAuthorizer::new(
+        DefaultHeaderExtractor::new("x-api-key"),
+        valid_api_keys,
+    ))
+    .extension_layer();
 
     let basic_auth_users: HashSet<BasicAuthUser> = [("user-1", "password-1"), ("user-2", "")]
         .into_iter()
         .map(Into::into)
         .collect();
 
-    let basic_auth_authorization_layer = ExtensionLayer::new(AuthorizationExtractor::new(
-        DefaultBasicAuthAuthorizer::new(DefaultBaiscAuthExtractor::new(), basic_auth_users),
+    let basic_auth_extractor = AuthorizationExtractor::new(DefaultBasicAuthAuthorizer::new(
+        DefaultBaiscAuthExtractor::new(),
+        basic_auth_users,
     ));
+
+    let basic_auth_authorization_layer = basic_auth_extractor.clone().extension_layer();
+
+    let mapped_basic_auth_authorization_layer = basic_auth_extractor
+        .clone()
+        .map(|ex: SealedAuthorized<BasicAuthUser>| ex.map(|_| String::from("A user")))
+        .extension_layer();
+
+    let error_mapped_basic_auth_authorization_layer = {
+        #[derive(Debug, Clone, thiserror::Error)]
+        #[error("Can't let you in")]
+        struct BasicAuthError;
+
+        impl IntoResponse for BasicAuthError {
+            fn into_response(self) -> axum::response::Response {
+                (StatusCode::IM_A_TEAPOT, "Can't let you in").into_response()
+            }
+        }
+
+        impl From<BasicAuthError> for axum::response::Response {
+            fn from(value: BasicAuthError) -> Self {
+                value.into_response()
+            }
+        }
+
+        ExtensionLayer::new(basic_auth_extractor.map_err(|_| BasicAuthError))
+    };
 
     let jwt_app = Router::new()
         .route("/", get(|| async move { "jwt index" }))
@@ -191,7 +233,7 @@ async fn main() -> anyhow::Result<()> {
         .layer(api_key_authorization_layer)
         .route("/show_api_key_without_layer", get(api_key));
 
-    // curl -u "user-1:password-1" http://127.0.0.1:5000/basic_auth
+    // curl -u "user-1:password-1" http://127.0.0.1:5000/basic_auth/show_basic_auth
     // curl -u "user-2" http://127.0.0.1:5000/basic_auth
     let basic_auth_app = Router::new()
         .route("/", get(|| async move { "basic auth index" }))
@@ -199,11 +241,27 @@ async fn main() -> anyhow::Result<()> {
         .layer(basic_auth_authorization_layer)
         .route("/show_basic_auth_without_layer", get(basic_auth));
 
+    // curl -u "user-1:password-1" http://127.0.0.1:5000/mapped_basic_auth/show_basic_auth
+    let mapped_basic_auth_app = Router::new()
+        .route("/", get(|| async move { "mapped basic auth index" }))
+        .route("/show_basic_auth", get(mapped_basic_auth))
+        .layer(mapped_basic_auth_authorization_layer)
+        .route("/show_basic_auth_without_layer", get(mapped_basic_auth));
+
+    // curl -u "user-1:wrong-pass" http://127.0.0.1:5000/error_mapped_basic_auth/show_basic_auth
+    let error_mapped_basic_auth_app = Router::new()
+        .route("/", get(|| async move { "error mapped basic auth index" }))
+        .route("/show_basic_auth", get(basic_auth))
+        .layer(error_mapped_basic_auth_authorization_layer)
+        .route("/show_basic_auth_without_layer", get(basic_auth));
+
     let app: Router<()> = Router::new()
         .nest("/jwt", jwt_app)
         .nest("/jwt_email_verified", jwt_email_verified_app)
         .nest("/api_key", api_key_app)
         .nest("/basic_auth", basic_auth_app)
+        .nest("/mapped_basic_auth", mapped_basic_auth_app)
+        .nest("/error_mapped_basic_auth", error_mapped_basic_auth_app)
         .route("/", get(|| async move { "index" }))
         .layer(
             TraceLayer::new_for_http()
