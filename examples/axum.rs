@@ -44,7 +44,7 @@ use composable_tower_http::{
     },
     extension::layer::{ExtensionLayer, ExtensionLayerExt},
     map::mapper::MapperExt,
-    validate::{extract::validation_extractor::ValidationExtractor, validator::Validator},
+    validate::{extract::validated_ext::ValidationExt, validator::Validator},
 };
 use http::StatusCode;
 use reqwest::Client;
@@ -154,10 +154,17 @@ async fn main() -> anyhow::Result<()> {
             }
         }
 
-        ExtensionLayer::new(ValidationExtractor::new(
-            jwt_authorization_extractor.clone(),
-            EmailVerifiedValidator {},
-        ))
+        jwt_authorization_extractor
+            .clone()
+            .validated(EmailVerifiedValidator {})
+            .extension_layer()
+
+        // Or
+
+        // ExtensionLayer::new(ValidationExtractor::new(
+        //     jwt_authorization_extractor.clone(),
+        //     EmailVerifiedValidator {},
+        // ))
     };
 
     let valid_api_keys: HashSet<ApiKey> = ["api-key-1", "api-key-2"]
