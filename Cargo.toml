@@ -65,8 +65,13 @@ path = "examples/jwt.rs"
 required-features = ["axum"]
 
 [[example]]
-name = "validate"
-path = "examples/validate.rs"
+name = "chain"
+path = "examples/chain.rs"
+required-features = ["axum"]
+
+[[example]]
+name = "async_chain"
+path = "examples/async_chain.rs"
 required-features = ["axum"]
 
 [package.metadata.docs.rs]

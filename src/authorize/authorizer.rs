@@ -26,6 +26,10 @@ pub trait AuthorizerExt: Sized + Authorizer {
 
     fn async_convert<Fn>(self, convert: Fn) -> AsyncConvert<Self, Fn>;
 
+    fn chain<Fn>(self, chain: Fn) -> Chain<Self, Fn>;
+
+    fn async_chain<Fn>(self, chain: Fn) -> AsyncChain<Self, Fn>;
+
     fn extracted(self) -> AuthorizationExtractor<Self>;
 }
 
@@ -51,6 +55,14 @@ where
 
     fn async_convert<Fn>(self, convert: Fn) -> AsyncConvert<Self, Fn> {
         AsyncConvert::new(self, convert)
+    }
+
+    fn chain<Fn>(self, chain: Fn) -> Chain<Self, Fn> {
+        Chain::new(self, chain)
+    }
+
+    fn async_chain<Fn>(self, chain: Fn) -> AsyncChain<Self, Fn> {
+        AsyncChain::new(self, chain)
     }
 
     fn extracted(self) -> AuthorizationExtractor<T> {
@@ -115,6 +127,30 @@ pub struct AsyncConvert<T, Fn> {
 impl<T, Fn> AsyncConvert<T, Fn> {
     pub const fn new(inner: T, convert: Fn) -> Self {
         Self { inner, convert }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Chain<T, Fn> {
+    inner: T,
+    chain: Fn,
+}
+
+impl<T, Fn> Chain<T, Fn> {
+    pub const fn new(inner: T, chain: Fn) -> Self {
+        Self { inner, chain }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct AsyncChain<T, Fn> {
+    inner: T,
+    chain: Fn,
+}
+
+impl<T, Fn> AsyncChain<T, Fn> {
+    pub const fn new(inner: T, chain: Fn) -> Self {
+        Self { inner, chain }
     }
 }
 
@@ -210,5 +246,44 @@ where
         let authorized = self.inner.authorize(headers).await;
 
         (self.convert)(authorized).await
+    }
+}
+
+impl<A, Fn, T, E> Authorizer for Chain<A, Fn>
+where
+    A: Authorizer + Sync,
+    Fn: FnOnce(A::Authorized) -> Result<T, E> + Copy + Sync,
+    T: Clone + Send + Sync + 'static,
+    E: From<A::Error>,
+{
+    type Authorized = T;
+
+    type Error = E;
+
+    #[tracing::instrument(skip_all)]
+    async fn authorize(&self, headers: &HeaderMap) -> Result<Self::Authorized, Self::Error> {
+        let authorized = self.inner.authorize(headers).await?;
+
+        (self.chain)(authorized)
+    }
+}
+
+impl<A, Fn, T, E, Fut> Authorizer for AsyncChain<A, Fn>
+where
+    A: Authorizer + Sync,
+    Fn: FnOnce(A::Authorized) -> Fut + Copy + Sync,
+    Fut: Future<Output = Result<T, E>> + Send,
+    T: Clone + Send + Sync + 'static,
+    E: From<A::Error>,
+{
+    type Authorized = T;
+
+    type Error = E;
+
+    #[tracing::instrument(skip_all)]
+    async fn authorize(&self, headers: &HeaderMap) -> Result<Self::Authorized, Self::Error> {
+        let authorized = self.inner.authorize(headers).await?;
+
+        (self.chain)(authorized).await
     }
 }

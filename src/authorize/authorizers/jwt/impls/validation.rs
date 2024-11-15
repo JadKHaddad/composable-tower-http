@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use jsonwebtoken::{Algorithm, Validation as JsonWebTokenValidation};
 
 /// Refer to the [`Validation`](jsonwebtoken::Validation) struct from the [`jsonwebtoken`] crate for more information.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Validation {
     required_spec_claims: HashSet<String>,
     leeway: u64,
