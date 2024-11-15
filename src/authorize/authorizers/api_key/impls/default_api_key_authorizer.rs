@@ -1,6 +1,6 @@
 use std::{borrow::Cow, collections::HashSet, ops::Deref, sync::Arc};
 
-use crate::authorize::{authorizer::Authorizer, header::header_extractor::HeaderExtractor};
+use crate::{authorize::header::header_extractor::HeaderExtractor, extract::extractor::Extractor};
 
 use super::api_key::ApiKey;
 
@@ -51,16 +51,16 @@ impl<H> Deref for DefaultApiKeyAuthorizer<H> {
     }
 }
 
-impl<H> Authorizer for DefaultApiKeyAuthorizer<H>
+impl<H> Extractor for DefaultApiKeyAuthorizer<H>
 where
     H: HeaderExtractor + Send + Sync,
 {
-    type Authorized = ApiKey;
+    type Extracted = ApiKey;
 
     type Error = DefaultApiKeyAuthorizeError<H::Error>;
 
     #[tracing::instrument(skip_all)]
-    async fn authorize(&self, headers: &http::HeaderMap) -> Result<Self::Authorized, Self::Error> {
+    async fn extract(&self, headers: &http::HeaderMap) -> Result<Self::Extracted, Self::Error> {
         let api_key_value = self
             .header_extractor
             .extract_header(headers)

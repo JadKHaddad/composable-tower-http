@@ -1,19 +1,14 @@
 //! Run with
 //!
 //! ```not_rust
-//! cargo run --example jwt --features="axum"
+//! cargo run --example jwt_email_verfied --features="axum"
 //! ```
 //!
 
 use anyhow::Context;
-use axum::{
-    response::{IntoResponse, Response},
-    routing::get,
-    Json, Router,
-};
+use axum::{response::IntoResponse, routing::get, Json, Router};
 use composable_tower_http::{
     authorize::{
-        authorizer::AuthorizerExt,
         authorizers::jwt::{
             impls::{default_jwt_authorizer::DefaultJwtAuthorizerBuilder, validation::Validation},
             jwk_set::impls::rotating::{
@@ -21,10 +16,11 @@ use composable_tower_http::{
                 rotating_jwk_set_provider::RotatingJwkSetProvider,
             },
         },
-        extract::authorized::Authorized,
         header::bearer::impls::default_bearer_extractor::DefaultBearerExtractor,
     },
+    chain::Chain,
     extension::layer::ExtensionLayerExt,
+    extract::{extracted::Extracted, extractor::ExtractorExt},
 };
 use http::StatusCode;
 use reqwest::Client;
@@ -43,17 +39,17 @@ pub struct Claims {
     pub email: String,
 }
 
-async fn claims(Authorized(claims): Authorized<Claims>) -> impl IntoResponse {
+async fn claims(Extracted(claims): Extracted<Claims>) -> impl IntoResponse {
     Json(claims)
 }
 
-async fn claims_email_verified(Authorized(claims): Authorized<Claims>) -> impl IntoResponse {
+async fn claims_email_verified(Extracted(claims): Extracted<Claims>) -> impl IntoResponse {
     Json(claims)
 }
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    util::init("chain")?;
+    util::init("jwt_email_verfied")?;
 
     let jwks_uri = std::env::var("JWKS_URI").unwrap_or_else(|_| {
         String::from("https://keycloak.com/realms/master/protocol/openid-connect/certs")
@@ -72,19 +68,9 @@ async fn main() -> anyhow::Result<()> {
         Validation::new().aud(&["account"]).iss(&[iss]),
     );
 
-    let layer = authorizer.clone().extracted().layer();
+    let layer = authorizer.clone().layer();
 
-    let chain_layer = authorizer
-        .clone()
-        .chain(|claims: Claims| {
-            if claims.email_verified {
-                return Ok(claims);
-            }
-
-            Err(EmailVerifiedError::Verify)
-        })
-        .extracted()
-        .layer();
+    let chain_layer = authorizer.clone().chain(EmailVerifier::new()).layer();
 
     let app = Router::new()
         // curl -H "Authorization: Bearer <token>" localhost:5000
@@ -96,37 +82,35 @@ async fn main() -> anyhow::Result<()> {
     util::serve(app).await
 }
 
-#[derive(Debug, thiserror::Error)]
-enum EmailVerifiedError<A> {
-    #[error("Authorization error: {0}")]
-    Authorize(
-        #[source]
-        #[from]
-        A,
-    ),
-    #[error("Email not verified")]
-    Verify,
-}
+#[derive(Debug)]
+struct EmailVerifier;
 
-impl<A> IntoResponse for EmailVerifiedError<A>
-where
-    A: IntoResponse,
-{
-    fn into_response(self) -> Response {
-        match self {
-            EmailVerifiedError::Authorize(err) => err.into_response(),
-            EmailVerifiedError::Verify => {
-                (StatusCode::FORBIDDEN, "Email not verified").into_response()
-            }
-        }
+impl EmailVerifier {
+    fn new() -> Self {
+        Self
     }
 }
 
-impl<A> From<EmailVerifiedError<A>> for Response
-where
-    A: IntoResponse,
-{
-    fn from(value: EmailVerifiedError<A>) -> Self {
-        value.into_response()
+impl Chain<Claims> for EmailVerifier {
+    type Extracted = Claims;
+
+    type Error = EmailVerificationError;
+
+    async fn chain(&self, value: Claims) -> Result<Self::Extracted, Self::Error> {
+        if value.email_verified {
+            return Ok(value);
+        }
+
+        Err(EmailVerificationError)
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+#[error("Email not verified")]
+struct EmailVerificationError;
+
+impl IntoResponse for EmailVerificationError {
+    fn into_response(self) -> axum::response::Response {
+        (StatusCode::UNAUTHORIZED, "Email not verified").into_response()
     }
 }

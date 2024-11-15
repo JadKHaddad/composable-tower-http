@@ -7,7 +7,7 @@ use std::{
 use http::Request;
 use tower::Service;
 
-use crate::extract::extractor::Extractor;
+use crate::extract::{extractor::Extractor, sealed_extracted::SealedExtracted};
 
 #[derive(Debug, Clone)]
 pub struct ExtensionService<S, Ex> {
@@ -49,7 +49,7 @@ where
                 Err(err) => return Ok(From::from(err)),
             };
 
-            request.extensions_mut().insert(extracted);
+            request.extensions_mut().insert(SealedExtracted(extracted));
 
             service.call(request).await
         })

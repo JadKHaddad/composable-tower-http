@@ -65,13 +65,13 @@ path = "examples/jwt.rs"
 required-features = ["axum"]
 
 [[example]]
-name = "chain"
-path = "examples/chain.rs"
+name = "jwt_email_verfied"
+path = "examples/jwt_email_verfied.rs"
 required-features = ["axum"]
 
 [[example]]
-name = "async_chain"
-path = "examples/async_chain.rs"
+name = "jwt_random_verification"
+path = "examples/jwt_random_verification.rs"
 required-features = ["axum"]
 
 [package.metadata.docs.rs]

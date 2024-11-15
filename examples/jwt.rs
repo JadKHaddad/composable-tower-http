@@ -9,7 +9,6 @@ use anyhow::Context;
 use axum::{response::IntoResponse, routing::get, Json, Router};
 use composable_tower_http::{
     authorize::{
-        authorizer::AuthorizerExt,
         authorizers::jwt::{
             impls::{default_jwt_authorizer::DefaultJwtAuthorizerBuilder, validation::Validation},
             jwk_set::impls::rotating::{
@@ -17,10 +16,10 @@ use composable_tower_http::{
                 rotating_jwk_set_provider::RotatingJwkSetProvider,
             },
         },
-        extract::authorized::Authorized,
         header::bearer::impls::default_bearer_extractor::DefaultBearerExtractor,
     },
     extension::layer::ExtensionLayerExt,
+    extract::extracted::Extracted,
 };
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -38,7 +37,7 @@ pub struct Claims {
     pub email: String,
 }
 
-async fn claims(Authorized(claims): Authorized<Claims>) -> impl IntoResponse {
+async fn claims(Extracted(claims): Extracted<Claims>) -> impl IntoResponse {
     Json(claims)
 }
 
@@ -62,7 +61,6 @@ async fn main() -> anyhow::Result<()> {
             .context("Failed to create jwk set provider")?,
         Validation::new().aud(&["account"]).iss(&[iss]),
     )
-    .extracted()
     .layer();
 
     let app = Router::new()

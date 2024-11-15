@@ -14,7 +14,6 @@ use axum::{
 };
 use composable_tower_http::{
     authorize::{
-        authorizer::AuthorizerExt,
         authorizers::basic_auth::impls::{
             basic_auth_user::BasicAuthUser,
             default_basic_auth_authorizer::DefaultBasicAuthAuthorizer,
@@ -22,6 +21,7 @@ use composable_tower_http::{
         header::basic_auth::impls::default_basic_auth_extractor::DefaultBaiscAuthExtractor,
     },
     extension::layer::ExtensionLayerExt,
+    extract::extractor::ExtractorExt,
 };
 use http::StatusCode;
 
@@ -40,13 +40,9 @@ async fn main() -> anyhow::Result<()> {
     let authorizer =
         DefaultBasicAuthAuthorizer::new(DefaultBaiscAuthExtractor::new(), basic_auth_users);
 
-    let layer = authorizer.clone().extracted().layer();
+    let layer = authorizer.clone().layer();
 
-    let map_err_layer = authorizer
-        .clone()
-        .map_err(|_| MyBasicAuthError)
-        .extracted()
-        .layer();
+    let map_err_layer = authorizer.clone().map_err(|_| MyBasicAuthError).layer();
 
     let app = Router::new()
         // curl -u "user-1:wrong" localhost:5000

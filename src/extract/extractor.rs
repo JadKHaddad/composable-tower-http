@@ -2,7 +2,7 @@ use std::future::Future;
 
 use http::HeaderMap;
 
-use crate::validate::extract::validation_extractor::ValidationExtractor;
+use crate::chain::chain_extractor::ChainExtractor;
 
 pub trait Extractor {
     type Extracted: Clone + Send + Sync;
@@ -26,7 +26,11 @@ pub trait ExtractorExt: Sized + Extractor {
 
     fn async_convert<Fn>(self, convert: Fn) -> AsyncConvert<Self, Fn>;
 
-    fn validated<V>(self, validator: V) -> ValidationExtractor<Self, V>;
+    fn chain<C>(self, chain: C) -> ChainExtractor<Self, C>;
+
+    fn chain_lite<Fn>(self, chain: Fn) -> ChainLite<Self, Fn>;
+
+    fn async_chain_lite<Fn>(self, chain: Fn) -> AsyncChainLite<Self, Fn>;
 }
 
 impl<T> ExtractorExt for T
@@ -53,8 +57,16 @@ where
         AsyncConvert::new(self, convert)
     }
 
-    fn validated<V>(self, validator: V) -> ValidationExtractor<Self, V> {
-        ValidationExtractor::new(self, validator)
+    fn chain<C>(self, chain: C) -> ChainExtractor<Self, C> {
+        ChainExtractor::new(self, chain)
+    }
+
+    fn chain_lite<Fn>(self, chain: Fn) -> ChainLite<Self, Fn> {
+        ChainLite::new(self, chain)
+    }
+
+    fn async_chain_lite<Fn>(self, chain: Fn) -> AsyncChainLite<Self, Fn> {
+        AsyncChainLite::new(self, chain)
     }
 }
 
@@ -115,6 +127,30 @@ pub struct AsyncConvert<T, Fn> {
 impl<T, Fn> AsyncConvert<T, Fn> {
     pub const fn new(inner: T, convert: Fn) -> Self {
         Self { inner, convert }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ChainLite<T, Fn> {
+    inner: T,
+    chain: Fn,
+}
+
+impl<T, Fn> ChainLite<T, Fn> {
+    pub const fn new(inner: T, chain: Fn) -> Self {
+        Self { inner, chain }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct AsyncChainLite<T, Fn> {
+    inner: T,
+    chain: Fn,
+}
+
+impl<T, Fn> AsyncChainLite<T, Fn> {
+    pub const fn new(inner: T, chain: Fn) -> Self {
+        Self { inner, chain }
     }
 }
 
@@ -207,5 +243,44 @@ where
         let ex = self.inner.extract(headers).await;
 
         (self.convert)(ex).await
+    }
+}
+
+impl<Ex, Fn, T, E> Extractor for ChainLite<Ex, Fn>
+where
+    Ex: Extractor + Sync,
+    Fn: FnOnce(Ex::Extracted) -> Result<T, E> + Copy + Sync,
+    T: Clone + Send + Sync + 'static,
+    E: From<Ex::Error>,
+{
+    type Extracted = T;
+
+    type Error = E;
+
+    #[tracing::instrument(skip_all)]
+    async fn extract(&self, headers: &HeaderMap) -> Result<Self::Extracted, Self::Error> {
+        let ex = self.inner.extract(headers).await?;
+
+        (self.chain)(ex)
+    }
+}
+
+impl<Ex, Fn, T, E, Fut> Extractor for AsyncChainLite<Ex, Fn>
+where
+    Ex: Extractor + Sync,
+    Fn: FnOnce(Ex::Extracted) -> Fut + Copy + Sync,
+    Fut: Future<Output = Result<T, E>> + Send,
+    T: Clone + Send + Sync + 'static,
+    E: From<Ex::Error>,
+{
+    type Extracted = T;
+
+    type Error = E;
+
+    #[tracing::instrument(skip_all)]
+    async fn extract(&self, headers: &HeaderMap) -> Result<Self::Extracted, Self::Error> {
+        let ex = self.inner.extract(headers).await?;
+
+        (self.chain)(ex).await
     }
 }

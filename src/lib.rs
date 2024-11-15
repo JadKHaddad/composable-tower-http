@@ -4,9 +4,9 @@
 //! Highly costumizable http utilities built on top of [tower](https://docs.rs/tower/latest/tower/).
 
 pub mod authorize;
+pub mod chain;
 pub mod extension;
 pub mod extract;
-pub mod validate;
 
 #[cfg(test)]
 mod test;
