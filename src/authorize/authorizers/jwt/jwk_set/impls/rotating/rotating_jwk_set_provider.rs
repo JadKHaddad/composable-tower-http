@@ -129,12 +129,17 @@ mod tests {
         AlgorithmParameters, CommonParameters, Jwk, JwkSet, OctetKeyParameters, OctetKeyType,
     };
 
-    use crate::authorize::authorizers::jwt::jwk_set::impls::rotating::jwk_set_fetcher::MockJwkSetFetcher;
+    use crate::{
+        authorize::authorizers::jwt::jwk_set::impls::rotating::jwk_set_fetcher::MockJwkSetFetcher,
+        test::init_tracing,
+    };
 
     use super::*;
 
     #[tokio::test]
     async fn jwk_set_will_rotate() {
+        init_tracing();
+
         let mut jwk_set_fetcher = MockJwkSetFetcher::default();
 
         jwk_set_fetcher

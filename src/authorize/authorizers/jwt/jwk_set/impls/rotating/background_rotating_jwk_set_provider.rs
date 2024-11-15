@@ -201,3 +201,126 @@ pub enum BackgroundRotatingJwkSetProvideError<F> {
     #[error("Failed to fetch JWK set: {0}")]
     Fetch(#[source] F),
 }
+
+#[cfg(test)]
+mod tests {
+    use std::time::Duration;
+
+    use anyhow::bail;
+    use jsonwebtoken::jwk::{
+        AlgorithmParameters, CommonParameters, Jwk, JwkSet, OctetKeyParameters, OctetKeyType,
+    };
+
+    use crate::{
+        authorize::authorizers::jwt::jwk_set::impls::rotating::jwk_set_fetcher::{
+            JwkSetFetcherExt, MockJwkSetFetcher,
+        },
+        test::init_tracing,
+    };
+
+    use super::*;
+
+    #[derive(Debug, Clone, thiserror::Error)]
+    #[error("Failed to fetch JWK set")]
+    struct MockJwkSetFetcherError;
+
+    #[tokio::test]
+    async fn jwk_set_will_rotate() {
+        init_tracing();
+
+        let mut jwk_set_fetcher = MockJwkSetFetcher::default();
+
+        jwk_set_fetcher
+            .expect_fetch_jwk_set()
+            .times(1)
+            .returning(|| Box::pin(async { Ok(JwkSet { keys: Vec::new() }) }));
+
+        jwk_set_fetcher
+            .expect_fetch_jwk_set()
+            .times(2)
+            .returning(|| {
+                Box::pin(async {
+                    Ok(JwkSet {
+                        keys: vec![Jwk {
+                            common: CommonParameters::default(),
+                            algorithm: AlgorithmParameters::OctetKey(OctetKeyParameters {
+                                key_type: OctetKeyType::Octet,
+                                value: String::new(),
+                            }),
+                        }],
+                    })
+                })
+            });
+
+        let jwk_set_fetcher = jwk_set_fetcher.map_err(|_| MockJwkSetFetcherError);
+
+        let jwks_refresh_interval_in_seconds = 1;
+
+        let background_rotating_jwk_set_provider = BackgroundRotatingJwkSetProvider::new(
+            jwks_refresh_interval_in_seconds,
+            jwk_set_fetcher,
+        )
+        .await
+        .expect("Failed to create background rotating jwk set provider");
+
+        let on_creation_jwks = background_rotating_jwk_set_provider
+            .provide_jwk_set()
+            .await
+            .expect("Failed to get jwk set")
+            .as_ref()
+            .clone();
+
+        tokio::time::sleep(Duration::from_millis(2100)).await;
+
+        let current_jwks = background_rotating_jwk_set_provider
+            .provide_jwk_set()
+            .await
+            .expect("Failed to get jwk set")
+            .as_ref()
+            .clone();
+
+        assert_ne!(on_creation_jwks, current_jwks);
+
+        drop(background_rotating_jwk_set_provider);
+
+        tokio::time::sleep(Duration::from_millis(2000)).await;
+    }
+
+    #[tokio::test]
+    async fn error_in_background_will_return_error() {
+        init_tracing();
+
+        init_tracing();
+
+        let mut jwk_set_fetcher = MockJwkSetFetcher::default();
+
+        jwk_set_fetcher
+            .expect_fetch_jwk_set()
+            .times(1)
+            .returning(|| Box::pin(async { Ok(JwkSet { keys: Vec::new() }) }));
+
+        jwk_set_fetcher
+            .expect_fetch_jwk_set()
+            .times(2)
+            .returning(|| Box::pin(async { bail!("Oh") }));
+
+        let jwk_set_fetcher = jwk_set_fetcher.map_err(|_| MockJwkSetFetcherError);
+
+        let jwks_refresh_interval_in_seconds = 1;
+
+        let background_rotating_jwk_set_provider = BackgroundRotatingJwkSetProvider::new(
+            jwks_refresh_interval_in_seconds,
+            jwk_set_fetcher,
+        )
+        .await
+        .expect("Failed to create background rotating jwk set provider");
+
+        tokio::time::sleep(Duration::from_millis(2100)).await;
+
+        let jwks_result = background_rotating_jwk_set_provider.provide_jwk_set().await;
+
+        if jwks_result.is_ok() {
+            panic!("Expected error")
+        }
+    }
+}
