@@ -77,6 +77,10 @@ where
 
         Ok(&self.holder)
     }
+
+    pub async fn last_updated(&self) -> Instant {
+        self.holder.read().await.last_updated
+    }
 }
 
 impl<F> JwkSetProvider for RotatingJwkSetProvider<F>

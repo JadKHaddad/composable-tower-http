@@ -139,6 +139,10 @@ where
     fn get(&self) -> &RwLock<JwkSetHolder<F>> {
         &self.holder
     }
+
+    pub async fn last_updated(&self) -> Instant {
+        self.get().read().await.last_updated
+    }
 }
 
 impl<F> JwkSetProvider for BackgroundRotatingJwkSetProvider<F>
