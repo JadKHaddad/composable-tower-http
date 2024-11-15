@@ -54,6 +54,11 @@ name = "map"
 path = "examples/map.rs"
 required-features = ["axum"]
 
+[[example]]
+name = "map_err"
+path = "examples/map_err.rs"
+required-features = ["axum"]
+
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]

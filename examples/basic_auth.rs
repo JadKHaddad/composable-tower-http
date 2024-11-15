@@ -5,17 +5,47 @@
 //! ```
 //!
 
-use axum::{routing::get, Router};
+use std::collections::HashSet;
+
+use axum::{response::IntoResponse, routing::get, Router};
+use composable_tower_http::{
+    authorize::{
+        authorizer::AuthorizerExt,
+        authorizers::basic_auth::impls::{
+            basic_auth_user::BasicAuthUser,
+            default_basic_auth_authorizer::DefaultBasicAuthAuthorizer,
+        },
+        extract::authorized::Authorized,
+        header::basic_auth::impls::default_basic_auth_extractor::DefaultBaiscAuthExtractor,
+    },
+    extension::layer::ExtensionLayerExt,
+};
 
 #[path = "../util/util.rs"]
 mod util;
+
+async fn basic_auth(Authorized(user): Authorized<BasicAuthUser>) -> impl IntoResponse {
+    format!("You are: {:?}", user)
+}
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     util::init("basic_auth")?;
 
+    let basic_auth_users: HashSet<BasicAuthUser> = [("user-1", "password-1"), ("user-2", "")]
+        .into_iter()
+        .map(Into::into)
+        .collect();
+
+    let layer = DefaultBasicAuthAuthorizer::new(DefaultBaiscAuthExtractor::new(), basic_auth_users)
+        .extracted()
+        .layer();
+
     let app = Router::new()
-        .route("/", get(|| async { "Hello, World!" }))
+        // curl -u "user-1:password-1" localhost:5000
+        .route("/", get(basic_auth))
+        .layer(layer)
+        // curl -u "user-1:wrong" localhost:5000
         .layer(util::trace_layer());
 
     util::serve(app).await
