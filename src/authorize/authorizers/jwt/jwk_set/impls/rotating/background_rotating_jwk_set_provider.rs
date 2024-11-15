@@ -10,7 +10,7 @@ use super::jwk_set_fetcher::JwkSetFetcher;
 #[derive(Debug)]
 pub struct JwkSetHolder<F>
 where
-    F: JwkSetFetcher + Send + Sync + 'static,
+    F: JwkSetFetcher,
     F::Error: std::error::Error + Clone + Send + Sync + 'static,
 {
     last_updated: Instant,
@@ -21,12 +21,12 @@ where
 #[derive(Debug)]
 pub struct BackgroundRotatingJwkSetProvider<F>
 where
-    F: JwkSetFetcher + Send + Sync + 'static,
+    F: JwkSetFetcher,
     F::Error: std::error::Error + Clone + Send + Sync + 'static,
 {
     holder: Arc<RwLock<JwkSetHolder<F>>>,
+    jwk_set_fetcher: Arc<F>,
     _cancellation_tx: oneshot::Sender<()>,
-    _phantom: std::marker::PhantomData<F>,
 }
 
 impl<F> BackgroundRotatingJwkSetProvider<F>
@@ -51,26 +51,28 @@ where
             jwk_set,
         }));
 
+        let jwk_set_fetcher = Arc::new(jwk_set_fetcher);
+
         let (tx, rx) = oneshot::channel::<()>();
 
         tokio::spawn(Self::background_refresh_loop(
             refresh_interval_in_seconds,
-            jwk_set_fetcher,
+            jwk_set_fetcher.clone(),
             holder.clone(),
             rx,
         ));
 
         Ok(Self {
             holder,
+            jwk_set_fetcher,
             _cancellation_tx: tx,
-            _phantom: std::marker::PhantomData,
         })
     }
 
     #[tracing::instrument(skip_all)]
     async fn background_refresh_loop(
         refresh_interval_in_seconds: u64,
-        jwk_set_fetcher: F,
+        jwk_set_fetcher: Arc<F>,
         holder: Arc<RwLock<JwkSetHolder<F>>>,
         mut cancellation_rx: oneshot::Receiver<()>,
     ) {
@@ -79,7 +81,7 @@ where
 
             tokio::select! {
                 _ = tokio::time::sleep(tokio::time::Duration::from_secs(refresh_interval_in_seconds)) => {
-                    if let Err(err) = Self::refresh_jwk_set(&jwk_set_fetcher, &holder).await {
+                    if let Err(err) = Self::refresh_jwk_set_inner(&jwk_set_fetcher, &holder).await {
                         tracing::error!(?err, "Failed to refresh JWK set");
                     }
                 }
@@ -92,8 +94,8 @@ where
         tracing::debug!("Background refresh loop terminated");
     }
 
-    #[tracing::instrument(skip_all)]
-    async fn refresh_jwk_set<'a>(
+    #[tracing::instrument(name = "refresh_jwk_set", skip_all)]
+    async fn refresh_jwk_set_inner<'a>(
         jwk_set_fetcher: &F,
         holder: &'a RwLock<JwkSetHolder<F>>,
     ) -> Result<impl AsRef<JwkSet> + 'a, BackgroundRotatingJwkSetProvideError<F::Error>> {
@@ -126,6 +128,13 @@ where
         }
     }
 
+    pub async fn refresh_jwk_set(
+        &self,
+    ) -> Result<impl AsRef<JwkSet> + use<'_, F>, BackgroundRotatingJwkSetProvideError<F::Error>>
+    {
+        Self::refresh_jwk_set_inner(&self.jwk_set_fetcher, &self.holder).await
+    }
+
     #[tracing::instrument(skip_all)]
     fn get(&self) -> &RwLock<JwkSetHolder<F>> {
         &self.holder
@@ -153,7 +162,7 @@ where
 
 impl<F> AsRef<JwkSet> for JwkSetHolder<F>
 where
-    F: JwkSetFetcher + Send + Sync + 'static,
+    F: JwkSetFetcher,
     F::Error: std::error::Error + Clone + Send + Sync + 'static,
 {
     fn as_ref(&self) -> &JwkSet {
@@ -164,12 +173,12 @@ where
 #[derive(Debug)]
 pub struct JwkSetReadGuard<'a, F>(RwLockReadGuard<'a, JwkSetHolder<F>>)
 where
-    F: JwkSetFetcher + Send + Sync + 'static,
+    F: JwkSetFetcher,
     F::Error: std::error::Error + Clone + Send + Sync + 'static;
 
 impl<'a, F> JwkSetReadGuard<'a, F>
 where
-    F: JwkSetFetcher + Send + Sync + 'static,
+    F: JwkSetFetcher,
     F::Error: std::error::Error + Clone + Send + Sync + 'static,
 {
     pub fn new(inner: RwLockReadGuard<'a, JwkSetHolder<F>>) -> Self {
@@ -179,7 +188,7 @@ where
 
 impl<F> AsRef<JwkSet> for JwkSetReadGuard<'_, F>
 where
-    F: JwkSetFetcher + Send + Sync + 'static,
+    F: JwkSetFetcher,
     F::Error: std::error::Error + Clone + Send + Sync + 'static,
 {
     fn as_ref(&self) -> &JwkSet {
