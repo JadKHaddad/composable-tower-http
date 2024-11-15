@@ -309,7 +309,7 @@ async fn main() -> anyhow::Result<()> {
                 .on_response(DefaultOnResponse::new().level(tracing::Level::INFO)),
         );
 
-    let socket_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 5000);
+    let socket_addr = "127.0.0.1:5000".parse::<SocketAddr>()?;
 
     tracing::info!(%socket_addr, "Starting server");
 

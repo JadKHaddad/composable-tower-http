@@ -39,6 +39,21 @@ name = "axum"
 path = "examples/axum.rs"
 required-features = ["axum"]
 
+[[example]]
+name = "api_key"
+path = "examples/api_key.rs"
+required-features = ["axum"]
+
+[[example]]
+name = "basic_auth"
+path = "examples/basic_auth.rs"
+required-features = ["axum"]
+
+[[example]]
+name = "map"
+path = "examples/map.rs"
+required-features = ["axum"]
+
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
