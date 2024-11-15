@@ -18,7 +18,7 @@ impl HttpJwkSetFetcher {
 
     #[tracing::instrument(skip_all)]
     pub async fn fetch(&self) -> Result<JwkSet, HttpJwkSetFetchError> {
-        tracing::debug!("Fetching jwks");
+        tracing::debug!("Fetching JWK set");
 
         let jwks = self
             .http_client
