@@ -150,11 +150,12 @@ pub enum DefaultJwtValidationError {
 /// With this builder you are able to create a [`DefaultJwtAuthorizer`] like this
 ///
 /// ```rust,ignore
-/// let jwt_authorizer = DefaultJwtAuthorizerBuilder::build::<Claims>(
+/// let jwt_authorizer = DefaultJwtAuthorizerBuilder::new(
 ///     bearer_extractor,
 ///     jwk_set_provider,
 ///     validation,
-/// );
+/// )
+/// .build::<Claims>();
 /// ```
 /// instead of this
 /// ```rust,ignore
@@ -163,17 +164,26 @@ pub enum DefaultJwtValidationError {
 /// ```
 #[derive(Debug)]
 pub struct DefaultJwtAuthorizerBuilder<Be, P> {
-    _bearer_extractor: PhantomData<Be>,
-    _jwk_set_provider: PhantomData<P>,
+    bearer_extractor: Be,
+    jwk_set_provider: P,
+    validation: Validation,
 }
 
 impl<Be, P> DefaultJwtAuthorizerBuilder<Be, P> {
-    pub fn build<C>(
-        bearer_extractor: Be,
-        jwk_set_provider: P,
-        validation: Validation,
-    ) -> DefaultJwtAuthorizer<Be, P, C> {
-        DefaultJwtAuthorizer::new(bearer_extractor, jwk_set_provider, validation)
+    pub fn new(bearer_extractor: Be, jwk_set_provider: P, validation: Validation) -> Self {
+        Self {
+            bearer_extractor,
+            jwk_set_provider,
+            validation,
+        }
+    }
+
+    pub fn build<C>(self) -> DefaultJwtAuthorizer<Be, P, C> {
+        DefaultJwtAuthorizer::new(
+            self.bearer_extractor,
+            self.jwk_set_provider,
+            self.validation,
+        )
     }
 }
 

@@ -54,13 +54,14 @@ async fn main() -> anyhow::Result<()> {
 
     tracing::info!(%jwks_uri, %iss);
 
-    let layer = DefaultJwtAuthorizerBuilder::build::<Claims>(
+    let layer = DefaultJwtAuthorizerBuilder::new(
         DefaultBearerExtractor::new(),
         RotatingJwkSetProvider::new(30, HttpJwkSetFetcher::new(jwks_uri, Client::new()))
             .await
             .context("Failed to create jwk set provider")?,
         Validation::new().aud(&["account"]).iss(&[iss]),
     )
+    .build::<Claims>()
     .layer();
 
     let app = Router::new()
