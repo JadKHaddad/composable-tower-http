@@ -18,7 +18,7 @@ use composable_tower_http::{
         },
         header::bearer::impls::default_bearer_extractor::DefaultBearerExtractor,
     },
-    chain::Chain,
+    chain::chainer::Chainer,
     extension::layer::ExtensionLayerExt,
     extract::{extracted::Extracted, extractor::ExtractorExt},
 };
@@ -96,12 +96,12 @@ impl RandomVerifier {
     }
 }
 
-impl Chain<Claims> for RandomVerifier {
-    type Extracted = Claims;
+impl Chainer<Claims> for RandomVerifier {
+    type Chained = Claims;
 
     type Error = RandomVerificationError;
 
-    async fn chain(&self, value: Claims) -> Result<Self::Extracted, Self::Error> {
+    async fn chain(&self, value: Claims) -> Result<Self::Chained, Self::Error> {
         let random_numbers = self
             .client
             .get("http://www.randomnumberapi.com/api/v1.0/random?min=0&max=10&count=1")

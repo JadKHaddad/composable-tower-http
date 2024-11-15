@@ -18,7 +18,7 @@ use composable_tower_http::{
         },
         header::bearer::impls::default_bearer_extractor::DefaultBearerExtractor,
     },
-    chain::Chain,
+    chain::chainer::Chainer,
     extension::layer::ExtensionLayerExt,
     extract::{extracted::Extracted, extractor::ExtractorExt},
 };
@@ -91,12 +91,12 @@ impl EmailVerifier {
     }
 }
 
-impl Chain<Claims> for EmailVerifier {
-    type Extracted = Claims;
+impl Chainer<Claims> for EmailVerifier {
+    type Chained = Claims;
 
     type Error = EmailVerificationError;
 
-    async fn chain(&self, value: Claims) -> Result<Self::Extracted, Self::Error> {
+    async fn chain(&self, value: Claims) -> Result<Self::Chained, Self::Error> {
         if value.email_verified {
             return Ok(value);
         }
