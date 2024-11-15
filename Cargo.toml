@@ -59,6 +59,16 @@ name = "map_err"
 path = "examples/map_err.rs"
 required-features = ["axum"]
 
+[[example]]
+name = "jwt"
+path = "examples/jwt.rs"
+required-features = ["axum"]
+
+[[example]]
+name = "validate"
+path = "examples/validate.rs"
+required-features = ["axum"]
+
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]

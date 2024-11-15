@@ -1,7 +1,7 @@
 //! Run with
 //!
 //! ```not_rust
-//! cargo run --example basic_auth --features="axum"
+//! cargo run --example map_err --features="axum"
 //! ```
 //!
 

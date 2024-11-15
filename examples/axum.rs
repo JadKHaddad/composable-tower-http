@@ -5,10 +5,7 @@
 //! ```
 //!
 
-use std::{
-    collections::HashSet,
-    net::{IpAddr, Ipv4Addr, SocketAddr},
-};
+use std::{collections::HashSet, net::SocketAddr};
 
 use anyhow::Context;
 use axum::{response::IntoResponse, routing::get, Json, Router};
