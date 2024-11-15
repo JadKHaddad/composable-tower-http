@@ -7,3 +7,6 @@ pub mod authorize;
 pub mod extension;
 pub mod extract;
 pub mod validate;
+
+#[cfg(test)]
+mod test;

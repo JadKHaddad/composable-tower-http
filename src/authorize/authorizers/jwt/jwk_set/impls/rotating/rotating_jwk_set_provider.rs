@@ -46,8 +46,10 @@ where
     }
 
     #[tracing::instrument(skip_all)]
-    async fn refresh_jwk_set(&self) -> Result<(), RotatingJwkSetProvideError<F::Error>> {
-        tracing::debug!("Refreshing jwks");
+    pub async fn refresh_jwk_set<'a>(
+        &'a self,
+    ) -> Result<impl AsRef<JwkSet> + 'a, RotatingJwkSetProvideError<F::Error>> {
+        tracing::debug!("Refreshing JWK set");
 
         let jwk_set = self
             .jwk_set_fetcher
@@ -55,12 +57,14 @@ where
             .await
             .map_err(RotatingJwkSetProvideError::Fetch)?;
 
-        let mut inner = self.holder.write().await;
+        *(self.holder.write().await) = JwkSetHolder {
+            last_updated: Instant::now(),
+            jwk_set,
+        };
 
-        inner.jwk_set = jwk_set;
-        inner.last_updated = Instant::now();
+        let guard = self.holder.read().await;
 
-        Ok(())
+        Ok(JwkSetReadGuard::new(guard))
     }
 
     #[tracing::instrument(skip_all)]
@@ -72,6 +76,10 @@ where
         }
 
         Ok(&self.holder)
+    }
+
+    pub async fn last_updated(&self) -> Instant {
+        self.holder.read().await.last_updated
     }
 }
 
@@ -85,9 +93,8 @@ where
     #[tracing::instrument(skip_all)]
     async fn provide_jwk_set(&self) -> Result<impl AsRef<JwkSet>, Self::Error> {
         let guard = self.get().await?.read().await;
-        let guard = JwkSetReadGuard::new(guard);
 
-        Ok(guard)
+        Ok(JwkSetReadGuard::new(guard))
     }
 }
 
@@ -126,12 +133,17 @@ mod tests {
         AlgorithmParameters, CommonParameters, Jwk, JwkSet, OctetKeyParameters, OctetKeyType,
     };
 
-    use crate::authorize::authorizers::jwt::jwk_set::impls::rotating::jwk_set_fetcher::MockJwkSetFetcher;
+    use crate::{
+        authorize::authorizers::jwt::jwk_set::impls::rotating::jwk_set_fetcher::MockJwkSetFetcher,
+        test::init_tracing,
+    };
 
     use super::*;
 
     #[tokio::test]
     async fn jwk_set_will_rotate() {
+        init_tracing();
+
         let mut jwk_set_fetcher = MockJwkSetFetcher::default();
 
         jwk_set_fetcher
