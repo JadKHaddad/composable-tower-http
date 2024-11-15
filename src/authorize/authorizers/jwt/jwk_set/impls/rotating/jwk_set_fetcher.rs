@@ -10,31 +10,31 @@ pub trait JwkSetFetcher {
 }
 
 pub trait JwkSetFetcherExt: Sized + JwkSetFetcher {
-    fn map_err<Fn>(self, map_err: Fn) -> ErrorMapper<Self, Fn>;
+    fn map_err<Fn>(self, map_err: Fn) -> ErrorMap<Self, Fn>;
 }
 
 impl<T> JwkSetFetcherExt for T
 where
     T: Sized + JwkSetFetcher,
 {
-    fn map_err<Fn>(self, map_err: Fn) -> ErrorMapper<Self, Fn> {
-        ErrorMapper::new(self, map_err)
+    fn map_err<Fn>(self, map_err: Fn) -> ErrorMap<Self, Fn> {
+        ErrorMap::new(self, map_err)
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct ErrorMapper<T, Fn> {
+pub struct ErrorMap<T, Fn> {
     inner: T,
     map_err: Fn,
 }
 
-impl<T, Fn> ErrorMapper<T, Fn> {
+impl<T, Fn> ErrorMap<T, Fn> {
     pub const fn new(inner: T, map_err: Fn) -> Self {
         Self { inner, map_err }
     }
 }
 
-impl<J, Fn, E> JwkSetFetcher for ErrorMapper<J, Fn>
+impl<J, Fn, E> JwkSetFetcher for ErrorMap<J, Fn>
 where
     J: JwkSetFetcher + Sync,
     Fn: FnOnce(J::Error) -> E + Copy + Sync,

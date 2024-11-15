@@ -16,11 +16,15 @@ pub trait Authorizer {
 }
 
 pub trait AuthorizerExt: Sized + Authorizer {
-    fn map<Fn>(self, map: Fn) -> Mapper<Self, Fn>;
+    fn map<Fn>(self, map: Fn) -> Map<Self, Fn>;
 
-    fn async_map<Fn>(self, map: Fn) -> AsyncMapper<Self, Fn>;
+    fn async_map<Fn>(self, map: Fn) -> AsyncMap<Self, Fn>;
 
-    fn map_err<Fn>(self, map_err: Fn) -> ErrorMapper<Self, Fn>;
+    fn map_err<Fn>(self, map_err: Fn) -> ErrorMap<Self, Fn>;
+
+    fn convert<Fn>(self, convert: Fn) -> Convert<Self, Fn>;
+
+    fn async_convert<Fn>(self, convert: Fn) -> AsyncConvert<Self, Fn>;
 
     fn extracted(self) -> AuthorizationExtractor<Self>;
 }
@@ -29,16 +33,24 @@ impl<T> AuthorizerExt for T
 where
     T: Sized + Authorizer,
 {
-    fn map<Fn>(self, map: Fn) -> Mapper<Self, Fn> {
-        Mapper::new(self, map)
+    fn map<Fn>(self, map: Fn) -> Map<Self, Fn> {
+        Map::new(self, map)
     }
 
-    fn async_map<Fn>(self, map: Fn) -> AsyncMapper<Self, Fn> {
-        AsyncMapper::new(self, map)
+    fn async_map<Fn>(self, map: Fn) -> AsyncMap<Self, Fn> {
+        AsyncMap::new(self, map)
     }
 
-    fn map_err<Fn>(self, map_err: Fn) -> ErrorMapper<Self, Fn> {
-        ErrorMapper::new(self, map_err)
+    fn map_err<Fn>(self, map_err: Fn) -> ErrorMap<Self, Fn> {
+        ErrorMap::new(self, map_err)
+    }
+
+    fn convert<Fn>(self, convert: Fn) -> Convert<Self, Fn> {
+        Convert::new(self, convert)
+    }
+
+    fn async_convert<Fn>(self, convert: Fn) -> AsyncConvert<Self, Fn> {
+        AsyncConvert::new(self, convert)
     }
 
     fn extracted(self) -> AuthorizationExtractor<T> {
@@ -47,42 +59,66 @@ where
 }
 
 #[derive(Debug, Clone)]
-pub struct Mapper<T, Fn> {
+pub struct Map<T, Fn> {
     inner: T,
     map: Fn,
 }
 
-impl<T, Fn> Mapper<T, Fn> {
+impl<T, Fn> Map<T, Fn> {
     pub const fn new(inner: T, map: Fn) -> Self {
         Self { inner, map }
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct AsyncMapper<T, Fn> {
+pub struct AsyncMap<T, Fn> {
     inner: T,
     map: Fn,
 }
 
-impl<T, Fn> AsyncMapper<T, Fn> {
+impl<T, Fn> AsyncMap<T, Fn> {
     pub const fn new(inner: T, map: Fn) -> Self {
         Self { inner, map }
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct ErrorMapper<T, Fn> {
+pub struct ErrorMap<T, Fn> {
     inner: T,
     map_err: Fn,
 }
 
-impl<T, Fn> ErrorMapper<T, Fn> {
+impl<T, Fn> ErrorMap<T, Fn> {
     pub const fn new(inner: T, map_err: Fn) -> Self {
         Self { inner, map_err }
     }
 }
 
-impl<A, Fn, T> Authorizer for Mapper<A, Fn>
+#[derive(Debug, Clone)]
+pub struct Convert<T, Fn> {
+    inner: T,
+    convert: Fn,
+}
+
+impl<T, Fn> Convert<T, Fn> {
+    pub const fn new(inner: T, convert: Fn) -> Self {
+        Self { inner, convert }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct AsyncConvert<T, Fn> {
+    inner: T,
+    convert: Fn,
+}
+
+impl<T, Fn> AsyncConvert<T, Fn> {
+    pub const fn new(inner: T, convert: Fn) -> Self {
+        Self { inner, convert }
+    }
+}
+
+impl<A, Fn, T> Authorizer for Map<A, Fn>
 where
     A: Authorizer + Sync,
     Fn: FnOnce(A::Authorized) -> T + Copy + Sync,
@@ -101,7 +137,7 @@ where
     }
 }
 
-impl<A, Fn, T, Fut> Authorizer for AsyncMapper<A, Fn>
+impl<A, Fn, T, Fut> Authorizer for AsyncMap<A, Fn>
 where
     A: Authorizer + Sync,
     Fn: FnOnce(A::Authorized) -> Fut + Copy + Sync,
@@ -122,7 +158,7 @@ where
     }
 }
 
-impl<A, Fn, E> Authorizer for ErrorMapper<A, Fn>
+impl<A, Fn, E> Authorizer for ErrorMap<A, Fn>
 where
     A: Authorizer + Sync,
     Fn: FnOnce(A::Error) -> E + Copy + Sync,
@@ -137,5 +173,42 @@ where
             .authorize(headers)
             .await
             .map_err(|err| (self.map_err)(err))
+    }
+}
+
+impl<A, Fn, T, E> Authorizer for Convert<A, Fn>
+where
+    A: Authorizer + Sync,
+    Fn: FnOnce(Result<A::Authorized, A::Error>) -> Result<T, E> + Copy + Sync,
+    T: Clone + Send + Sync + 'static,
+{
+    type Authorized = T;
+
+    type Error = E;
+
+    #[tracing::instrument(skip_all)]
+    async fn authorize(&self, headers: &HeaderMap) -> Result<Self::Authorized, Self::Error> {
+        let authorized = self.inner.authorize(headers).await;
+
+        (self.convert)(authorized)
+    }
+}
+
+impl<A, Fn, T, E, Fut> Authorizer for AsyncConvert<A, Fn>
+where
+    A: Authorizer + Sync,
+    Fn: FnOnce(Result<A::Authorized, A::Error>) -> Fut + Copy + Sync,
+    Fut: Future<Output = Result<T, E>> + Send,
+    T: Clone + Send + Sync + 'static,
+{
+    type Authorized = T;
+
+    type Error = E;
+
+    #[tracing::instrument(skip_all)]
+    async fn authorize(&self, headers: &HeaderMap) -> Result<Self::Authorized, Self::Error> {
+        let authorized = self.inner.authorize(headers).await;
+
+        (self.convert)(authorized).await
     }
 }

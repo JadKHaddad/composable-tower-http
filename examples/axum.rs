@@ -25,11 +25,16 @@ use composable_tower_http::{
             },
             jwt::{
                 impls::{
-                    default_jwt_authorizer::DefaultJwtAuthorizerBuilder, validation::Validation,
+                    default_jwt_authorizer::{
+                        DefaultJwtAuthorizeError, DefaultJwtAuthorizerBuilder,
+                    },
+                    validation::Validation,
                 },
                 jwk_set::impls::rotating::{
-                    impls::http_jwk_set_fetcher::HttpJwkSetFetcher,
-                    rotating_jwk_set_provider::RotatingJwkSetProvider,
+                    impls::http_jwk_set_fetcher::{HttpJwkSetFetchError, HttpJwkSetFetcher},
+                    rotating_jwk_set_provider::{
+                        RotatingJwkSetProvideError, RotatingJwkSetProvider,
+                    },
                 },
             },
         },
@@ -39,7 +44,7 @@ use composable_tower_http::{
         },
         header::{
             basic_auth::impls::default_basic_auth_extractor::DefaultBaiscAuthExtractor,
-            bearer::impls::default_bearer_extractor::DefaultBearerExtractor,
+            bearer::impls::default_bearer_extractor::{DefaultBearerError, DefaultBearerExtractor},
             impls::default_header_extractor::DefaultHeaderExtractor,
         },
     },
@@ -73,6 +78,31 @@ fn init() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[derive(Clone, Debug)]
+struct EmailVerifiedValidator;
+
+#[derive(Debug, thiserror::Error)]
+#[error("Email not verified")]
+struct EmailVerifiedError;
+
+impl IntoResponse for EmailVerifiedError {
+    fn into_response(self) -> axum::response::Response {
+        (StatusCode::UNAUTHORIZED, "Email not verified").into_response()
+    }
+}
+
+impl Validator<SealedAuthorized<Claims>> for EmailVerifiedValidator {
+    type Error = EmailVerifiedError;
+
+    async fn validate(&self, value: &SealedAuthorized<Claims>) -> Result<(), Self::Error> {
+        if value.email_verified {
+            return Ok(());
+        }
+
+        Err(EmailVerifiedError)
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Claims {
     pub email_verified: bool,
@@ -83,12 +113,24 @@ pub struct Claims {
     pub email: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ConvertedClaims {
+    pub email_verified: bool,
+    pub name: String,
+}
+
 async fn claims(Authorized(claims): Authorized<Claims>) -> impl IntoResponse {
     Json(claims)
 }
 
 async fn email_verified_claims(
     ValidatedAuthorized(claims): ValidatedAuthorized<Claims>,
+) -> impl IntoResponse {
+    Json(claims)
+}
+
+async fn email_verified_converted_claims(
+    Authorized(claims): Authorized<ConvertedClaims>,
 ) -> impl IntoResponse {
     Json(claims)
 }
@@ -118,55 +160,40 @@ async fn main() -> anyhow::Result<()> {
 
     tracing::info!(%jwks_uri, %iss);
 
-    let jwt_authorization_extractor = DefaultJwtAuthorizerBuilder::build::<Claims>(
+    let jwt_authorizer = DefaultJwtAuthorizerBuilder::build::<Claims>(
         DefaultBearerExtractor::new(),
         RotatingJwkSetProvider::new(30, HttpJwkSetFetcher::new(jwks_uri, Client::new()))
             .await
             .context("Failed to create jwk set provider")?,
         Validation::new().aud(&["account"]).iss(&[iss]),
-    )
-    .extracted();
+    );
 
+    let jwt_authorization_extractor = jwt_authorizer.clone().extracted();
     let jwt_authorization_layer = jwt_authorization_extractor.clone().layer();
 
-    let jwt_validation_authorization_email_verified_layer = {
-        #[derive(Clone, Debug)]
-        struct EmailVerifiedValidator;
+    let jwt_validation_authorization_email_verified_layer = jwt_authorization_extractor
+        .clone()
+        .validated(EmailVerifiedValidator {})
+        .layer();
 
-        #[derive(Debug, thiserror::Error)]
-        #[error("Email not verified")]
-        struct EmailVerifiedError;
-
-        impl IntoResponse for EmailVerifiedError {
-            fn into_response(self) -> axum::response::Response {
-                (StatusCode::UNAUTHORIZED, "Email not verified").into_response()
-            }
-        }
-
-        impl Validator<SealedAuthorized<Claims>> for EmailVerifiedValidator {
-            type Error = EmailVerifiedError;
-
-            async fn validate(&self, value: &SealedAuthorized<Claims>) -> Result<(), Self::Error> {
-                if value.email_verified {
-                    return Ok(());
-                }
-
-                Err(EmailVerifiedError)
-            }
-        }
-
-        jwt_authorization_extractor
-            .clone()
-            .validated(EmailVerifiedValidator {})
-            .layer()
-
-        // Or
-
-        // ExtensionLayer::new(ValidationExtractor::new(
-        //     jwt_authorization_extractor.clone(),
-        //     EmailVerifiedValidator {},
-        // ))
-    };
+    let jwt_validation_authorization_email_verified_converted_layer = jwt_authorizer
+        .convert(
+            |res: Result<
+                Claims,
+                DefaultJwtAuthorizeError<
+                    DefaultBearerError,
+                    RotatingJwkSetProvideError<HttpJwkSetFetchError>,
+                >,
+            >| {
+                // TODO: do the conversion here
+                res.map(|claims| ConvertedClaims {
+                    email_verified: claims.email_verified,
+                    name: claims.name,
+                })
+            },
+        )
+        .extracted()
+        .layer();
 
     let valid_api_keys: HashSet<ApiKey> = ["api-key-1", "api-key-2"]
         .into_iter()
@@ -226,6 +253,15 @@ async fn main() -> anyhow::Result<()> {
         .layer(jwt_validation_authorization_email_verified_layer)
         .route("/show_claims_without_layer", get(email_verified_claims));
 
+    let jwt_email_verified_converted_app = Router::new()
+        .route("/", get(|| async move { "jwt index" }))
+        .route("/show_claims", get(email_verified_converted_claims))
+        .layer(jwt_validation_authorization_email_verified_converted_layer)
+        .route(
+            "/show_claims_without_layer",
+            get(email_verified_converted_claims),
+        );
+
     let api_key_app = Router::new()
         .route("/", get(|| async move { "api key index" }))
         .route("/show_api_key", get(api_key))
@@ -257,6 +293,10 @@ async fn main() -> anyhow::Result<()> {
     let app: Router<()> = Router::new()
         .nest("/jwt", jwt_app)
         .nest("/jwt_email_verified", jwt_email_verified_app)
+        .nest(
+            "/jwt_email_verified_converted",
+            jwt_email_verified_converted_app,
+        )
         .nest("/api_key", api_key_app)
         .nest("/basic_auth", basic_auth_app)
         .nest("/mapped_basic_auth", mapped_basic_auth_app)

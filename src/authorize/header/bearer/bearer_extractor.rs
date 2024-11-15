@@ -7,31 +7,31 @@ pub trait BearerExtractor {
 }
 
 pub trait BearerExtractorExt: Sized + BearerExtractor {
-    fn map_err<Fn>(self, map_err: Fn) -> ErrorMapper<Self, Fn>;
+    fn map_err<Fn>(self, map_err: Fn) -> ErrorMap<Self, Fn>;
 }
 
 impl<T> BearerExtractorExt for T
 where
     T: Sized + BearerExtractor,
 {
-    fn map_err<Fn>(self, map_err: Fn) -> ErrorMapper<Self, Fn> {
-        ErrorMapper::new(self, map_err)
+    fn map_err<Fn>(self, map_err: Fn) -> ErrorMap<Self, Fn> {
+        ErrorMap::new(self, map_err)
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct ErrorMapper<T, Fn> {
+pub struct ErrorMap<T, Fn> {
     inner: T,
     map_err: Fn,
 }
 
-impl<T, Fn> ErrorMapper<T, Fn> {
+impl<T, Fn> ErrorMap<T, Fn> {
     pub const fn new(inner: T, map_err: Fn) -> Self {
         Self { inner, map_err }
     }
 }
 
-impl<B, Fn, E> BearerExtractor for ErrorMapper<B, Fn>
+impl<B, Fn, E> BearerExtractor for ErrorMap<B, Fn>
 where
     B: BearerExtractor + Sync,
     Fn: FnOnce(B::Error) -> E + Copy + Sync,
