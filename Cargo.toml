@@ -70,6 +70,12 @@ path = "examples/jwt_email_verfied.rs"
 required-features = ["axum"]
 
 [[example]]
+name = "jwt_email_verfied_lite"
+path = "examples/jwt_email_verfied_lite.rs"
+required-features = ["axum"]
+
+
+[[example]]
 name = "jwt_random_verification"
 path = "examples/jwt_random_verification.rs"
 required-features = ["axum"]
