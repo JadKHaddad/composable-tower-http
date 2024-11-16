@@ -10,7 +10,7 @@ repository = "https://github.com/JadKHaddad/composable-tower-http"
 keywords = ["tower", "http", "middleware", "extension", "composable"]
 
 [features]
-default = []
+default = ["axum"]
 axum = ["dep:axum"]
 
 [dependencies]
