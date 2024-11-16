@@ -10,7 +10,7 @@ repository = "https://github.com/JadKHaddad/composable-tower-http"
 keywords = ["tower", "http", "middleware", "extension", "composable"]
 
 [features]
-default = ["axum"]
+default = []
 axum = ["dep:axum"]
 
 [dependencies]
@@ -33,11 +33,6 @@ anyhow = "1.0.93"
 dotenvy = "0.15.7"
 tower-http = { version = "0.6.1", features = ["trace"] }
 mockall = "0.13.0"
-
-[[example]]
-name = "axum"
-path = "examples/axum.rs"
-required-features = ["axum"]
 
 [[example]]
 name = "api_key"
