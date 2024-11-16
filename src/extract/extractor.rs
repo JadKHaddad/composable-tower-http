@@ -2,7 +2,7 @@ use std::future::Future;
 
 use http::HeaderMap;
 
-use crate::chain::chain_extractor::ChainExtractor;
+use crate::{chain::chain_extractor::ChainExtractor, error::InfallibleError};
 
 pub trait Extractor {
     type Extracted: Clone + Send + Sync;
@@ -31,6 +31,10 @@ pub trait ExtractorExt: Sized + Extractor {
     fn chain_lite<Fn>(self, chain: Fn) -> ChainLite<Self, Fn>;
 
     fn async_chain_lite<Fn>(self, chain: Fn) -> AsyncChainLite<Self, Fn>;
+
+    fn optional(self) -> Optional<Self> {
+        Optional::new(self)
+    }
 }
 
 impl<T> ExtractorExt for T
@@ -67,6 +71,10 @@ where
 
     fn async_chain_lite<Fn>(self, chain: Fn) -> AsyncChainLite<Self, Fn> {
         AsyncChainLite::new(self, chain)
+    }
+
+    fn optional(self) -> Optional<Self> {
+        Optional::new(self)
     }
 }
 
@@ -151,6 +159,17 @@ pub struct AsyncChainLite<T, Fn> {
 impl<T, Fn> AsyncChainLite<T, Fn> {
     pub const fn new(inner: T, chain: Fn) -> Self {
         Self { inner, chain }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Optional<T> {
+    inner: T,
+}
+
+impl<T> Optional<T> {
+    pub const fn new(inner: T) -> Self {
+        Self { inner }
     }
 }
 
@@ -282,5 +301,19 @@ where
         let ex = self.inner.extract(headers).await?;
 
         (self.chain)(ex).await
+    }
+}
+
+impl<Ex> Extractor for Optional<Ex>
+where
+    Ex: Extractor + Sync,
+{
+    type Extracted = Option<Ex::Extracted>;
+
+    type Error = InfallibleError;
+
+    #[tracing::instrument(skip_all)]
+    async fn extract(&self, headers: &HeaderMap) -> Result<Self::Extracted, Self::Error> {
+        Ok(self.inner.extract(headers).await.ok())
     }
 }

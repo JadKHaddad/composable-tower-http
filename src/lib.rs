@@ -5,6 +5,7 @@
 
 pub mod authorize;
 pub mod chain;
+pub mod error;
 pub mod extension;
 pub mod extract;
 
