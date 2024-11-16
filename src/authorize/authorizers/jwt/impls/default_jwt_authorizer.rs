@@ -4,9 +4,12 @@ use http::HeaderMap;
 use jsonwebtoken::{decode, decode_header, errors::Error as JwtError, jwk::JwkSet, DecodingKey};
 use serde::de::DeserializeOwned;
 
-use crate::authorize::{
-    authorizer::Authorizer, authorizers::jwt::jwk_set::jwk_set_provider::JwkSetProvider,
-    header::bearer::bearer_extractor::BearerExtractor,
+use crate::{
+    authorize::{
+        authorizers::jwt::jwk_set::jwk_set_provider::JwkSetProvider,
+        header::bearer::bearer_extractor::BearerExtractor,
+    },
+    extract::extractor::Extractor,
 };
 
 use super::validation::Validation;
@@ -85,18 +88,18 @@ impl<Be, P, C> DefaultJwtAuthorizer<Be, P, C> {
     }
 }
 
-impl<Be, P, C> Authorizer for DefaultJwtAuthorizer<Be, P, C>
+impl<Be, P, C> Extractor for DefaultJwtAuthorizer<Be, P, C>
 where
     Be: BearerExtractor + Send + Sync,
     P: JwkSetProvider + Send + Sync,
     C: DeserializeOwned + Clone + Send + Sync + 'static,
 {
-    type Authorized = C;
+    type Extracted = C;
 
     type Error = DefaultJwtAuthorizeError<Be::Error, P::Error>;
 
     #[tracing::instrument(skip_all)]
-    async fn authorize(&self, headers: &HeaderMap) -> Result<Self::Authorized, Self::Error> {
+    async fn extract(&self, headers: &HeaderMap) -> Result<Self::Extracted, Self::Error> {
         let bearer = self
             .bearer_extractor
             .extract_bearer(headers)
@@ -147,11 +150,12 @@ pub enum DefaultJwtValidationError {
 /// With this builder you are able to create a [`DefaultJwtAuthorizer`] like this
 ///
 /// ```rust,ignore
-/// let jwt_authorizer = DefaultJwtAuthorizerBuilder::build::<Claims>(
+/// let jwt_authorizer = DefaultJwtAuthorizerBuilder::new(
 ///     bearer_extractor,
 ///     jwk_set_provider,
 ///     validation,
-/// );
+/// )
+/// .build::<Claims>();
 /// ```
 /// instead of this
 /// ```rust,ignore
@@ -160,17 +164,26 @@ pub enum DefaultJwtValidationError {
 /// ```
 #[derive(Debug)]
 pub struct DefaultJwtAuthorizerBuilder<Be, P> {
-    _bearer_extractor: PhantomData<Be>,
-    _jwk_set_provider: PhantomData<P>,
+    bearer_extractor: Be,
+    jwk_set_provider: P,
+    validation: Validation,
 }
 
 impl<Be, P> DefaultJwtAuthorizerBuilder<Be, P> {
-    pub fn build<C>(
-        bearer_extractor: Be,
-        jwk_set_provider: P,
-        validation: Validation,
-    ) -> DefaultJwtAuthorizer<Be, P, C> {
-        DefaultJwtAuthorizer::new(bearer_extractor, jwk_set_provider, validation)
+    pub fn new(bearer_extractor: Be, jwk_set_provider: P, validation: Validation) -> Self {
+        Self {
+            bearer_extractor,
+            jwk_set_provider,
+            validation,
+        }
+    }
+
+    pub fn build<C>(self) -> DefaultJwtAuthorizer<Be, P, C> {
+        DefaultJwtAuthorizer::new(
+            self.bearer_extractor,
+            self.jwk_set_provider,
+            self.validation,
+        )
     }
 }
 

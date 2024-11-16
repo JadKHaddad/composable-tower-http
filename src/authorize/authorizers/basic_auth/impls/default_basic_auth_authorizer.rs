@@ -1,7 +1,8 @@
 use std::{collections::HashSet, ops::Deref, sync::Arc};
 
-use crate::authorize::{
-    authorizer::Authorizer, header::basic_auth::basic_auth_extractor::BasicAuthExtractor,
+use crate::{
+    authorize::header::basic_auth::basic_auth_extractor::BasicAuthExtractor,
+    extract::extractor::Extractor,
 };
 
 use super::basic_auth_user::BasicAuthUser;
@@ -53,16 +54,16 @@ impl<Ba> Deref for DefaultBasicAuthAuthorizer<Ba> {
     }
 }
 
-impl<Ba> Authorizer for DefaultBasicAuthAuthorizer<Ba>
+impl<Ba> Extractor for DefaultBasicAuthAuthorizer<Ba>
 where
     Ba: BasicAuthExtractor + Send + Sync,
 {
-    type Authorized = BasicAuthUser;
+    type Extracted = BasicAuthUser;
 
     type Error = DefaultBasicAuthAuthorizeError<Ba::Error>;
 
     #[tracing::instrument(skip_all)]
-    async fn authorize(&self, headers: &http::HeaderMap) -> Result<Self::Authorized, Self::Error> {
+    async fn extract(&self, headers: &http::HeaderMap) -> Result<Self::Extracted, Self::Error> {
         let used_basic_auth = self
             .basic_auth_extractor
             .extract_basic_auth(headers)

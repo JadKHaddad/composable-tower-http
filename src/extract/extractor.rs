@@ -2,7 +2,7 @@ use std::future::Future;
 
 use http::HeaderMap;
 
-use crate::validate::extract::validation_extractor::ValidationExtractor;
+use crate::chain::chain_extractor::ChainExtractor;
 
 pub trait Extractor {
     type Extracted: Clone + Send + Sync;
@@ -16,73 +16,145 @@ pub trait Extractor {
 }
 
 pub trait ExtractorExt: Sized + Extractor {
-    fn map<Fn>(self, map: Fn) -> Mapper<Self, Fn>;
+    fn map<Fn>(self, map: Fn) -> Map<Self, Fn>;
 
-    fn async_map<Fn>(self, map: Fn) -> AsyncMapper<Self, Fn>;
+    fn async_map<Fn>(self, map: Fn) -> AsyncMap<Self, Fn>;
 
-    fn map_err<Fn>(self, map_err: Fn) -> ErrorMapper<Self, Fn>;
+    fn map_err<Fn>(self, map_err: Fn) -> ErrorMap<Self, Fn>;
 
-    fn validated<V>(self, validator: V) -> ValidationExtractor<Self, V>;
+    fn convert<Fn>(self, convert: Fn) -> Convert<Self, Fn>;
+
+    fn async_convert<Fn>(self, convert: Fn) -> AsyncConvert<Self, Fn>;
+
+    fn chain<C>(self, chain: C) -> ChainExtractor<Self, C>;
+
+    fn chain_lite<Fn>(self, chain: Fn) -> ChainLite<Self, Fn>;
+
+    fn async_chain_lite<Fn>(self, chain: Fn) -> AsyncChainLite<Self, Fn>;
 }
 
 impl<T> ExtractorExt for T
 where
     T: Sized + Extractor,
 {
-    fn map<Fn>(self, map: Fn) -> Mapper<Self, Fn> {
-        Mapper::new(self, map)
+    fn map<Fn>(self, map: Fn) -> Map<Self, Fn> {
+        Map::new(self, map)
     }
 
-    fn async_map<Fn>(self, map: Fn) -> AsyncMapper<Self, Fn> {
-        AsyncMapper::new(self, map)
+    fn async_map<Fn>(self, map: Fn) -> AsyncMap<Self, Fn> {
+        AsyncMap::new(self, map)
     }
 
-    fn map_err<Fn>(self, map_err: Fn) -> ErrorMapper<Self, Fn> {
-        ErrorMapper::new(self, map_err)
+    fn map_err<Fn>(self, map_err: Fn) -> ErrorMap<Self, Fn> {
+        ErrorMap::new(self, map_err)
     }
 
-    fn validated<V>(self, validator: V) -> ValidationExtractor<Self, V> {
-        ValidationExtractor::new(self, validator)
+    fn convert<Fn>(self, convert: Fn) -> Convert<Self, Fn> {
+        Convert::new(self, convert)
+    }
+
+    fn async_convert<Fn>(self, convert: Fn) -> AsyncConvert<Self, Fn> {
+        AsyncConvert::new(self, convert)
+    }
+
+    fn chain<C>(self, chain: C) -> ChainExtractor<Self, C> {
+        ChainExtractor::new(self, chain)
+    }
+
+    fn chain_lite<Fn>(self, chain: Fn) -> ChainLite<Self, Fn> {
+        ChainLite::new(self, chain)
+    }
+
+    fn async_chain_lite<Fn>(self, chain: Fn) -> AsyncChainLite<Self, Fn> {
+        AsyncChainLite::new(self, chain)
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct Mapper<T, Fn> {
+pub struct Map<T, Fn> {
     inner: T,
     map: Fn,
 }
 
-impl<T, Fn> Mapper<T, Fn> {
+impl<T, Fn> Map<T, Fn> {
     pub const fn new(inner: T, map: Fn) -> Self {
         Self { inner, map }
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct AsyncMapper<T, Fn> {
+pub struct AsyncMap<T, Fn> {
     inner: T,
     map: Fn,
 }
 
-impl<T, Fn> AsyncMapper<T, Fn> {
+impl<T, Fn> AsyncMap<T, Fn> {
     pub const fn new(inner: T, map: Fn) -> Self {
         Self { inner, map }
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct ErrorMapper<T, Fn> {
+pub struct ErrorMap<T, Fn> {
     inner: T,
     map_err: Fn,
 }
 
-impl<T, Fn> ErrorMapper<T, Fn> {
+impl<T, Fn> ErrorMap<T, Fn> {
     pub const fn new(inner: T, map_err: Fn) -> Self {
         Self { inner, map_err }
     }
 }
 
-impl<Ex, Fn, T> Extractor for Mapper<Ex, Fn>
+#[derive(Debug, Clone)]
+pub struct Convert<T, Fn> {
+    inner: T,
+    convert: Fn,
+}
+
+impl<T, Fn> Convert<T, Fn> {
+    pub const fn new(inner: T, convert: Fn) -> Self {
+        Self { inner, convert }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct AsyncConvert<T, Fn> {
+    inner: T,
+    convert: Fn,
+}
+
+impl<T, Fn> AsyncConvert<T, Fn> {
+    pub const fn new(inner: T, convert: Fn) -> Self {
+        Self { inner, convert }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ChainLite<T, Fn> {
+    inner: T,
+    chain: Fn,
+}
+
+impl<T, Fn> ChainLite<T, Fn> {
+    pub const fn new(inner: T, chain: Fn) -> Self {
+        Self { inner, chain }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct AsyncChainLite<T, Fn> {
+    inner: T,
+    chain: Fn,
+}
+
+impl<T, Fn> AsyncChainLite<T, Fn> {
+    pub const fn new(inner: T, chain: Fn) -> Self {
+        Self { inner, chain }
+    }
+}
+
+impl<Ex, Fn, T> Extractor for Map<Ex, Fn>
 where
     Ex: Extractor + Sync,
     Fn: FnOnce(Ex::Extracted) -> T + Copy + Sync,
@@ -93,12 +165,12 @@ where
     type Error = Ex::Error;
 
     #[tracing::instrument(skip_all)]
-    async fn extract(&self, headers: &http::HeaderMap) -> Result<Self::Extracted, Self::Error> {
+    async fn extract(&self, headers: &HeaderMap) -> Result<Self::Extracted, Self::Error> {
         self.inner.extract(headers).await.map(|ex| (self.map)(ex))
     }
 }
 
-impl<Ex, Fn, T, Fut> Extractor for AsyncMapper<Ex, Fn>
+impl<Ex, Fn, T, Fut> Extractor for AsyncMap<Ex, Fn>
 where
     Ex: Extractor + Sync,
     Fn: FnOnce(Ex::Extracted) -> Fut + Copy + Sync,
@@ -110,7 +182,7 @@ where
     type Error = Ex::Error;
 
     #[tracing::instrument(skip_all)]
-    async fn extract(&self, headers: &http::HeaderMap) -> Result<Self::Extracted, Self::Error> {
+    async fn extract(&self, headers: &HeaderMap) -> Result<Self::Extracted, Self::Error> {
         let extracted = self.inner.extract(headers).await?;
 
         let mapped = (self.map)(extracted).await;
@@ -119,7 +191,7 @@ where
     }
 }
 
-impl<Ex, Fn, E> Extractor for ErrorMapper<Ex, Fn>
+impl<Ex, Fn, E> Extractor for ErrorMap<Ex, Fn>
 where
     Ex: Extractor + Sync,
     Fn: FnOnce(Ex::Error) -> E + Copy + Sync,
@@ -129,10 +201,86 @@ where
     type Error = E;
 
     #[tracing::instrument(skip_all)]
-    async fn extract(&self, headers: &http::HeaderMap) -> Result<Self::Extracted, Self::Error> {
+    async fn extract(&self, headers: &HeaderMap) -> Result<Self::Extracted, Self::Error> {
         self.inner
             .extract(headers)
             .await
             .map_err(|err| (self.map_err)(err))
+    }
+}
+
+impl<Ex, Fn, T, E> Extractor for Convert<Ex, Fn>
+where
+    Ex: Extractor + Sync,
+    Fn: FnOnce(Result<Ex::Extracted, Ex::Error>) -> Result<T, E> + Copy + Sync,
+    T: Clone + Send + Sync,
+{
+    type Extracted = T;
+
+    type Error = E;
+
+    #[tracing::instrument(skip_all)]
+    async fn extract(&self, headers: &HeaderMap) -> Result<Self::Extracted, Self::Error> {
+        let ex = self.inner.extract(headers).await;
+
+        (self.convert)(ex)
+    }
+}
+
+impl<Ex, Fn, T, E, Fut> Extractor for AsyncConvert<Ex, Fn>
+where
+    Ex: Extractor + Sync,
+    Fn: FnOnce(Result<Ex::Extracted, Ex::Error>) -> Fut + Copy + Sync,
+    Fut: Future<Output = Result<T, E>> + Send,
+    T: Clone + Send + Sync,
+{
+    type Extracted = T;
+
+    type Error = E;
+
+    #[tracing::instrument(skip_all)]
+    async fn extract(&self, headers: &HeaderMap) -> Result<Self::Extracted, Self::Error> {
+        let ex = self.inner.extract(headers).await;
+
+        (self.convert)(ex).await
+    }
+}
+
+impl<Ex, Fn, T, E> Extractor for ChainLite<Ex, Fn>
+where
+    Ex: Extractor + Sync,
+    Fn: FnOnce(Ex::Extracted) -> Result<T, E> + Copy + Sync,
+    T: Clone + Send + Sync + 'static,
+    E: From<Ex::Error>,
+{
+    type Extracted = T;
+
+    type Error = E;
+
+    #[tracing::instrument(skip_all)]
+    async fn extract(&self, headers: &HeaderMap) -> Result<Self::Extracted, Self::Error> {
+        let ex = self.inner.extract(headers).await?;
+
+        (self.chain)(ex)
+    }
+}
+
+impl<Ex, Fn, T, E, Fut> Extractor for AsyncChainLite<Ex, Fn>
+where
+    Ex: Extractor + Sync,
+    Fn: FnOnce(Ex::Extracted) -> Fut + Copy + Sync,
+    Fut: Future<Output = Result<T, E>> + Send,
+    T: Clone + Send + Sync + 'static,
+    E: From<Ex::Error>,
+{
+    type Extracted = T;
+
+    type Error = E;
+
+    #[tracing::instrument(skip_all)]
+    async fn extract(&self, headers: &HeaderMap) -> Result<Self::Extracted, Self::Error> {
+        let ex = self.inner.extract(headers).await?;
+
+        (self.chain)(ex).await
     }
 }

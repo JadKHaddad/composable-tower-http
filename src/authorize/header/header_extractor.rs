@@ -7,31 +7,31 @@ pub trait HeaderExtractor {
 }
 
 pub trait HeaderExtractorExt: Sized + HeaderExtractor {
-    fn map_err<Fn>(self, map_err: Fn) -> ErrorMapper<Self, Fn>;
+    fn map_err<Fn>(self, map_err: Fn) -> ErrorMap<Self, Fn>;
 }
 
 impl<T> HeaderExtractorExt for T
 where
     T: Sized + HeaderExtractor,
 {
-    fn map_err<Fn>(self, map_err: Fn) -> ErrorMapper<Self, Fn> {
-        ErrorMapper::new(self, map_err)
+    fn map_err<Fn>(self, map_err: Fn) -> ErrorMap<Self, Fn> {
+        ErrorMap::new(self, map_err)
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct ErrorMapper<T, Fn> {
+pub struct ErrorMap<T, Fn> {
     inner: T,
     map_err: Fn,
 }
 
-impl<T, Fn> ErrorMapper<T, Fn> {
+impl<T, Fn> ErrorMap<T, Fn> {
     pub const fn new(inner: T, map_err: Fn) -> Self {
         Self { inner, map_err }
     }
 }
 
-impl<H, Fn, E> HeaderExtractor for ErrorMapper<H, Fn>
+impl<H, Fn, E> HeaderExtractor for ErrorMap<H, Fn>
 where
     H: HeaderExtractor + Sync,
     Fn: FnOnce(H::Error) -> E + Copy + Sync,

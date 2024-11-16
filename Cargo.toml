@@ -35,8 +35,44 @@ tower-http = { version = "0.6.1", features = ["trace"] }
 mockall = "0.13.0"
 
 [[example]]
-name = "axum"
-path = "examples/axum.rs"
+name = "api_key"
+path = "examples/api_key.rs"
+required-features = ["axum"]
+
+[[example]]
+name = "basic_auth"
+path = "examples/basic_auth.rs"
+required-features = ["axum"]
+
+[[example]]
+name = "map"
+path = "examples/map.rs"
+required-features = ["axum"]
+
+[[example]]
+name = "map_err"
+path = "examples/map_err.rs"
+required-features = ["axum"]
+
+[[example]]
+name = "jwt"
+path = "examples/jwt.rs"
+required-features = ["axum"]
+
+[[example]]
+name = "jwt_email_verfied"
+path = "examples/jwt_email_verfied.rs"
+required-features = ["axum"]
+
+[[example]]
+name = "jwt_email_verfied_lite"
+path = "examples/jwt_email_verfied_lite.rs"
+required-features = ["axum"]
+
+
+[[example]]
+name = "jwt_random_verification"
+path = "examples/jwt_random_verification.rs"
 required-features = ["axum"]
 
 [package.metadata.docs.rs]
