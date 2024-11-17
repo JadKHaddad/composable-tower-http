@@ -10,7 +10,7 @@ repository = "https://github.com/JadKHaddad/composable-tower-http"
 keywords = ["tower", "http", "middleware", "extension", "composable"]
 
 [features]
-default = []
+default = ["axum"]
 axum = ["dep:axum"]
 
 [dependencies]
@@ -77,6 +77,26 @@ required-features = ["axum"]
 [[example]]
 name = "optional"
 path = "examples/optional.rs"
+required-features = ["axum"]
+
+[[example]]
+name = "any"
+path = "examples/any.rs"
+required-features = ["axum"]
+
+[[example]]
+name = "or"
+path = "examples/or.rs"
+required-features = ["axum"]
+
+[[example]]
+name = "and"
+path = "examples/and.rs"
+required-features = ["axum"]
+
+[[example]]
+name = "or_and"
+path = "examples/or_and.rs"
 required-features = ["axum"]
 
 [package.metadata.docs.rs]

@@ -98,7 +98,6 @@ where
 
     type Error = DefaultJwtAuthorizeError<Be::Error, P::Error>;
 
-    #[tracing::instrument(skip_all)]
     async fn extract(&self, headers: &HeaderMap) -> Result<Self::Extracted, Self::Error> {
         let bearer = self
             .bearer_extractor

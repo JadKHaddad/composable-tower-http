@@ -38,7 +38,6 @@ where
 {
     type Error = E;
 
-    #[tracing::instrument(skip_all)]
     fn extract_header<'a>(&self, headers: &'a HeaderMap) -> Result<&'a str, Self::Error> {
         self.inner.extract_header(headers).map_err(self.map_err)
     }

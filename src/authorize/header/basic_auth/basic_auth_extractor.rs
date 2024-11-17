@@ -38,7 +38,6 @@ where
 {
     type Error = E;
 
-    #[tracing::instrument(skip_all)]
     fn extract_basic_auth(&self, headers: &HeaderMap) -> Result<(String, String), Self::Error> {
         self.inner.extract_basic_auth(headers).map_err(self.map_err)
     }

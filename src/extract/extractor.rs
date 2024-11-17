@@ -4,6 +4,8 @@ use http::HeaderMap;
 
 use crate::{chain::chain_extractor::ChainExtractor, error::InfallibleError};
 
+use super::{and::AndExtractor, any::Any, or::OrExtractor};
+
 pub trait Extractor {
     type Extracted: Clone + Send + Sync;
 
@@ -16,31 +18,6 @@ pub trait Extractor {
 }
 
 pub trait ExtractorExt: Sized + Extractor {
-    fn map<Fn>(self, map: Fn) -> Map<Self, Fn>;
-
-    fn async_map<Fn>(self, map: Fn) -> AsyncMap<Self, Fn>;
-
-    fn map_err<Fn>(self, map_err: Fn) -> ErrorMap<Self, Fn>;
-
-    fn convert<Fn>(self, convert: Fn) -> Convert<Self, Fn>;
-
-    fn async_convert<Fn>(self, convert: Fn) -> AsyncConvert<Self, Fn>;
-
-    fn chain<C>(self, chain: C) -> ChainExtractor<Self, C>;
-
-    fn chain_lite<Fn>(self, chain: Fn) -> ChainLite<Self, Fn>;
-
-    fn async_chain_lite<Fn>(self, chain: Fn) -> AsyncChainLite<Self, Fn>;
-
-    fn optional(self) -> Optional<Self> {
-        Optional::new(self)
-    }
-}
-
-impl<T> ExtractorExt for T
-where
-    T: Sized + Extractor,
-{
     fn map<Fn>(self, map: Fn) -> Map<Self, Fn> {
         Map::new(self, map)
     }
@@ -76,7 +53,21 @@ where
     fn optional(self) -> Optional<Self> {
         Optional::new(self)
     }
+
+    fn any<Ex>(self, other: Ex) -> Any<Self, Ex> {
+        Any::new(self, other)
+    }
+
+    fn or<Ex>(self, other: Ex) -> OrExtractor<Self, Ex> {
+        OrExtractor::new(self, other)
+    }
+
+    fn and<Ex>(self, other: Ex) -> AndExtractor<Self, Ex> {
+        AndExtractor::new(self, other)
+    }
 }
+
+impl<T> ExtractorExt for T where T: Sized + Extractor {}
 
 #[derive(Debug, Clone)]
 pub struct Map<T, Fn> {
@@ -183,7 +174,6 @@ where
 
     type Error = Ex::Error;
 
-    #[tracing::instrument(skip_all)]
     async fn extract(&self, headers: &HeaderMap) -> Result<Self::Extracted, Self::Error> {
         self.inner.extract(headers).await.map(|ex| (self.map)(ex))
     }
@@ -200,7 +190,6 @@ where
 
     type Error = Ex::Error;
 
-    #[tracing::instrument(skip_all)]
     async fn extract(&self, headers: &HeaderMap) -> Result<Self::Extracted, Self::Error> {
         let extracted = self.inner.extract(headers).await?;
 
@@ -219,7 +208,6 @@ where
 
     type Error = E;
 
-    #[tracing::instrument(skip_all)]
     async fn extract(&self, headers: &HeaderMap) -> Result<Self::Extracted, Self::Error> {
         self.inner
             .extract(headers)
@@ -238,7 +226,6 @@ where
 
     type Error = E;
 
-    #[tracing::instrument(skip_all)]
     async fn extract(&self, headers: &HeaderMap) -> Result<Self::Extracted, Self::Error> {
         let ex = self.inner.extract(headers).await;
 
@@ -257,7 +244,6 @@ where
 
     type Error = E;
 
-    #[tracing::instrument(skip_all)]
     async fn extract(&self, headers: &HeaderMap) -> Result<Self::Extracted, Self::Error> {
         let ex = self.inner.extract(headers).await;
 
@@ -276,7 +262,6 @@ where
 
     type Error = E;
 
-    #[tracing::instrument(skip_all)]
     async fn extract(&self, headers: &HeaderMap) -> Result<Self::Extracted, Self::Error> {
         let ex = self.inner.extract(headers).await?;
 
@@ -296,7 +281,6 @@ where
 
     type Error = E;
 
-    #[tracing::instrument(skip_all)]
     async fn extract(&self, headers: &HeaderMap) -> Result<Self::Extracted, Self::Error> {
         let ex = self.inner.extract(headers).await?;
 
@@ -312,7 +296,6 @@ where
 
     type Error = InfallibleError;
 
-    #[tracing::instrument(skip_all)]
     async fn extract(&self, headers: &HeaderMap) -> Result<Self::Extracted, Self::Error> {
         Ok(self.inner.extract(headers).await.ok())
     }

@@ -54,7 +54,6 @@ where
 
     type Error = ChainError<Ex::Error, C::Error>;
 
-    #[tracing::instrument(skip_all)]
     async fn extract(&self, headers: &http::HeaderMap) -> Result<Self::Extracted, Self::Error> {
         let extracted = self
             .extractor
@@ -88,12 +87,10 @@ mod axum {
 
     impl<Ex, E> IntoResponse for ChainError<Ex, E>
     where
-        Ex: std::error::Error + IntoResponse,
-        E: std::error::Error + IntoResponse,
+        Ex: IntoResponse,
+        E: IntoResponse,
     {
         fn into_response(self) -> Response {
-            tracing::warn!(err = %self, "Invalid");
-
             match self {
                 ChainError::Extract(err) => err.into_response(),
                 ChainError::Chain(err) => err.into_response(),
@@ -103,8 +100,8 @@ mod axum {
 
     impl<Ex, E> From<ChainError<Ex, E>> for Response
     where
-        Ex: std::error::Error + IntoResponse,
-        E: std::error::Error + IntoResponse,
+        Ex: IntoResponse,
+        E: IntoResponse,
     {
         fn from(value: ChainError<Ex, E>) -> Self {
             value.into_response()
