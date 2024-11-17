@@ -95,8 +95,8 @@ path = "examples/and.rs"
 required-features = ["axum"]
 
 [[example]]
-name = "and_or"
-path = "examples/and_or.rs"
+name = "or_and"
+path = "examples/or_and.rs"
 required-features = ["axum"]
 
 [package.metadata.docs.rs]

@@ -1,7 +1,7 @@
 //! Run with
 //!
 //! ```not_rust
-//! cargo run --example and_or --features="axum"
+//! cargo run --example or_and --features="axum"
 //! ```
 //!
 
@@ -12,7 +12,7 @@ mod util;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    util::init("and_or")?;
+    util::init("or_and")?;
 
     // TODO
     let app = Router::new()
