@@ -62,7 +62,6 @@ where
 
     type Error = DefaultBasicAuthAuthorizeError<Ba::Error>;
 
-    #[tracing::instrument(skip_all)]
     async fn extract(&self, headers: &http::HeaderMap) -> Result<Self::Extracted, Self::Error> {
         let used_basic_auth = self
             .basic_auth_extractor

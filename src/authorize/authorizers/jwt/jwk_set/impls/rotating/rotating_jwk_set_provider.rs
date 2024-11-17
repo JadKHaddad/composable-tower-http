@@ -45,10 +45,9 @@ where
         })
     }
 
-    #[tracing::instrument(skip_all)]
-    pub async fn refresh_jwk_set<'a>(
-        &'a self,
-    ) -> Result<impl AsRef<JwkSet> + 'a, RotatingJwkSetProvideError<F::Error>> {
+    pub async fn refresh_jwk_set(
+        &self,
+    ) -> Result<impl AsRef<JwkSet> + use<'_, F>, RotatingJwkSetProvideError<F::Error>> {
         tracing::debug!("Refreshing JWK set");
 
         let jwk_set = self
@@ -67,7 +66,6 @@ where
         Ok(JwkSetReadGuard::new(guard))
     }
 
-    #[tracing::instrument(skip_all)]
     async fn get(&self) -> Result<&RwLock<JwkSetHolder>, RotatingJwkSetProvideError<F::Error>> {
         let last_updated = self.holder.read().await.last_updated;
 
@@ -90,7 +88,6 @@ where
 {
     type Error = RotatingJwkSetProvideError<F::Error>;
 
-    #[tracing::instrument(skip_all)]
     async fn provide_jwk_set(&self) -> Result<impl AsRef<JwkSet>, Self::Error> {
         let guard = self.get().await?.read().await;
 

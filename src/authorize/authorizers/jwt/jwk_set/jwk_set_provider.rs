@@ -42,7 +42,6 @@ where
 {
     type Error = E;
 
-    #[tracing::instrument(skip_all)]
     async fn provide_jwk_set(&self) -> Result<impl AsRef<JwkSet>, Self::Error> {
         self.inner
             .provide_jwk_set()

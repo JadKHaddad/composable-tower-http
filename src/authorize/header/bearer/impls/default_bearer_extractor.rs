@@ -41,7 +41,6 @@ impl Default for DefaultBearerExtractor {
 impl BearerExtractor for DefaultBearerExtractor {
     type Error = DefaultBearerError;
 
-    #[tracing::instrument(skip_all)]
     fn extract_bearer<'a>(&self, headers: &'a HeaderMap) -> Result<&'a str, Self::Error> {
         let authorization = self.header_erxtractor.extract_header(headers)?;
         let bearer_token = Self::extract_bearer(authorization)?;

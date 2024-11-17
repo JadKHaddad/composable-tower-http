@@ -59,7 +59,6 @@ impl Default for DefaultBaiscAuthExtractor {
 impl BasicAuthExtractor for DefaultBaiscAuthExtractor {
     type Error = DefaultBasicAuthError;
 
-    #[tracing::instrument(skip_all)]
     fn extract_basic_auth(&self, headers: &HeaderMap) -> Result<(String, String), Self::Error> {
         let authorization = self.header_erxtractor.extract_header(headers)?;
         let (username, password) = Self::extract_encoded_basic(authorization)

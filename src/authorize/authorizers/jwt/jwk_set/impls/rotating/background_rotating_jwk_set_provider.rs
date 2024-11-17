@@ -69,7 +69,6 @@ where
         })
     }
 
-    #[tracing::instrument(skip_all)]
     async fn background_refresh_loop(
         refresh_interval_in_seconds: u64,
         jwk_set_fetcher: Arc<F>,
@@ -94,7 +93,6 @@ where
         tracing::debug!("Background refresh loop terminated");
     }
 
-    #[tracing::instrument(name = "refresh_jwk_set", skip_all)]
     async fn refresh_jwk_set_inner<'a>(
         jwk_set_fetcher: &F,
         holder: &'a RwLock<JwkSetHolder<F>>,
@@ -135,7 +133,6 @@ where
         Self::refresh_jwk_set_inner(&self.jwk_set_fetcher, &self.holder).await
     }
 
-    #[tracing::instrument(skip_all)]
     fn get(&self) -> &RwLock<JwkSetHolder<F>> {
         &self.holder
     }
@@ -152,7 +149,6 @@ where
 {
     type Error = BackgroundRotatingJwkSetProvideError<F::Error>;
 
-    #[tracing::instrument(skip_all)]
     async fn provide_jwk_set(&self) -> Result<impl AsRef<JwkSet>, Self::Error> {
         let guard = self.get().read().await;
 

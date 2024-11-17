@@ -27,7 +27,7 @@ where
 
     type Error = AndError<L::Error, R::Error>;
 
-    #[tracing::instrument(skip_all)]
+    
     async fn extract(&self, headers: &http::HeaderMap) -> Result<Self::Extracted, Self::Error> {
         let left = self.left.extract(headers).await.map_err(AndError::Left)?;
         let right = self.right.extract(headers).await.map_err(AndError::Right)?;

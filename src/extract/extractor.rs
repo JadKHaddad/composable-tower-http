@@ -174,7 +174,7 @@ where
 
     type Error = Ex::Error;
 
-    #[tracing::instrument(skip_all)]
+    
     async fn extract(&self, headers: &HeaderMap) -> Result<Self::Extracted, Self::Error> {
         self.inner.extract(headers).await.map(|ex| (self.map)(ex))
     }
@@ -191,7 +191,7 @@ where
 
     type Error = Ex::Error;
 
-    #[tracing::instrument(skip_all)]
+    
     async fn extract(&self, headers: &HeaderMap) -> Result<Self::Extracted, Self::Error> {
         let extracted = self.inner.extract(headers).await?;
 
@@ -210,7 +210,7 @@ where
 
     type Error = E;
 
-    #[tracing::instrument(skip_all)]
+    
     async fn extract(&self, headers: &HeaderMap) -> Result<Self::Extracted, Self::Error> {
         self.inner
             .extract(headers)
@@ -229,7 +229,7 @@ where
 
     type Error = E;
 
-    #[tracing::instrument(skip_all)]
+    
     async fn extract(&self, headers: &HeaderMap) -> Result<Self::Extracted, Self::Error> {
         let ex = self.inner.extract(headers).await;
 
@@ -248,7 +248,7 @@ where
 
     type Error = E;
 
-    #[tracing::instrument(skip_all)]
+    
     async fn extract(&self, headers: &HeaderMap) -> Result<Self::Extracted, Self::Error> {
         let ex = self.inner.extract(headers).await;
 
@@ -267,7 +267,7 @@ where
 
     type Error = E;
 
-    #[tracing::instrument(skip_all)]
+    
     async fn extract(&self, headers: &HeaderMap) -> Result<Self::Extracted, Self::Error> {
         let ex = self.inner.extract(headers).await?;
 
@@ -287,7 +287,7 @@ where
 
     type Error = E;
 
-    #[tracing::instrument(skip_all)]
+    
     async fn extract(&self, headers: &HeaderMap) -> Result<Self::Extracted, Self::Error> {
         let ex = self.inner.extract(headers).await?;
 
@@ -303,7 +303,7 @@ where
 
     type Error = InfallibleError;
 
-    #[tracing::instrument(skip_all)]
+    
     async fn extract(&self, headers: &HeaderMap) -> Result<Self::Extracted, Self::Error> {
         Ok(self.inner.extract(headers).await.ok())
     }
