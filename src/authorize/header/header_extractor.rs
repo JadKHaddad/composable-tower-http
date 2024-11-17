@@ -4,8 +4,6 @@ pub trait HeaderExtractor {
     type Error;
 
     fn extract_header<'a>(&self, headers: &'a HeaderMap) -> Result<&'a str, Self::Error>;
-
-    fn header_name(&self) -> &str;
 }
 
 pub trait HeaderExtractorExt: Sized + HeaderExtractor {
@@ -40,13 +38,7 @@ where
 {
     type Error = E;
 
-    #[tracing::instrument(skip_all, fields(header_name = %self.inner.header_name()))]
     fn extract_header<'a>(&self, headers: &'a HeaderMap) -> Result<&'a str, Self::Error> {
         self.inner.extract_header(headers).map_err(self.map_err)
-    }
-
-    #[tracing::instrument(skip_all)]
-    fn header_name(&self) -> &str {
-        self.inner.header_name()
     }
 }

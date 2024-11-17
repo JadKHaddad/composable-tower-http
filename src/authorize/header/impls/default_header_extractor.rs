@@ -20,7 +20,6 @@ impl DefaultHeaderExtractor {
 impl HeaderExtractor for DefaultHeaderExtractor {
     type Error = DefaultHeaderError;
 
-    #[tracing::instrument(skip_all, fields(header_name = %self.header_name))]
     fn extract_header<'a>(&self, headers: &'a HeaderMap) -> Result<&'a str, Self::Error> {
         let header = headers
             .get(self.header_name.as_ref())
@@ -29,11 +28,6 @@ impl HeaderExtractor for DefaultHeaderExtractor {
             .map_err(DefaultHeaderError::Ascii)?;
 
         Ok(header)
-    }
-
-    #[tracing::instrument(skip_all)]
-    fn header_name(&self) -> &str {
-        &self.header_name
     }
 }
 
