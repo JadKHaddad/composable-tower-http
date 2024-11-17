@@ -18,7 +18,6 @@ mod axum {
     {
         type Rejection = StatusCode;
 
-        
         async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
             let extracted = Extension::<SealedExtracted<T>>::from_request_parts(parts, state).await;
 

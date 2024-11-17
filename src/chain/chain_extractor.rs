@@ -54,7 +54,6 @@ where
 
     type Error = ChainError<Ex::Error, C::Error>;
 
-    
     async fn extract(&self, headers: &http::HeaderMap) -> Result<Self::Extracted, Self::Error> {
         let extracted = self
             .extractor

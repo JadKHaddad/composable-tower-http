@@ -23,7 +23,6 @@ where
 
     type Error = AnyError<L::Error, R::Error>;
 
-    
     async fn extract(&self, headers: &http::HeaderMap) -> Result<Self::Extracted, Self::Error> {
         match self.left.extract(headers).await {
             Ok(extracted) => Ok(extracted),
