@@ -44,10 +44,10 @@ where
 }
 
 #[derive(Debug, thiserror::Error)]
-#[error("left: {left}, right: {right}")]
+#[error("Left: {left}, Right: {right}")]
 pub struct OrError<L, R> {
-    left: L,
-    right: R,
+    pub left: L,
+    pub right: R,
 }
 
 #[cfg(feature = "axum")]
