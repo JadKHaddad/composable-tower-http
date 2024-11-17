@@ -59,7 +59,7 @@ where
 
     type Error = DefaultApiKeyAuthorizeError<H::Error>;
 
-    #[tracing::instrument(skip_all)]
+    #[tracing::instrument(skip_all, fields(header_name = %self.header_extractor.header_name()))]
     async fn extract(&self, headers: &http::HeaderMap) -> Result<Self::Extracted, Self::Error> {
         let api_key_value = self
             .header_extractor

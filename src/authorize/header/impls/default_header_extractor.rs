@@ -30,6 +30,11 @@ impl HeaderExtractor for DefaultHeaderExtractor {
 
         Ok(header)
     }
+
+    #[tracing::instrument(skip_all)]
+    fn header_name(&self) -> &str {
+        &self.header_name
+    }
 }
 
 #[derive(Debug, thiserror::Error)]

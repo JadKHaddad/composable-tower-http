@@ -4,7 +4,7 @@ use http::HeaderMap;
 
 use crate::{chain::chain_extractor::ChainExtractor, error::InfallibleError};
 
-use super::any::Any;
+use super::{any::Any, or::OrExtractor};
 
 pub trait Extractor {
     type Extracted: Clone + Send + Sync;
@@ -56,6 +56,10 @@ pub trait ExtractorExt: Sized + Extractor {
 
     fn any<Ex>(self, other: Ex) -> Any<Self, Ex> {
         Any::new(self, other)
+    }
+
+    fn or<Ex>(self, other: Ex) -> OrExtractor<Self, Ex> {
+        OrExtractor::new(self, other)
     }
 }
 
