@@ -79,6 +79,11 @@ name = "optional"
 path = "examples/optional.rs"
 required-features = ["axum"]
 
+[[example]]
+name = "any"
+path = "examples/any.rs"
+required-features = ["axum"]
+
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]

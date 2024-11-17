@@ -1,6 +1,9 @@
+use std::convert::Infallible;
+
 #[derive(Debug, Clone, thiserror::Error)]
 #[error("Infallible")]
-pub struct InfallibleError;
+#[repr(transparent)]
+pub struct InfallibleError(Infallible);
 
 #[cfg(feature = "axum")]
 mod axum {

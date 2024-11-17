@@ -4,6 +4,8 @@ use http::HeaderMap;
 
 use crate::{chain::chain_extractor::ChainExtractor, error::InfallibleError};
 
+use super::any::Any;
+
 pub trait Extractor {
     type Extracted: Clone + Send + Sync;
 
@@ -16,31 +18,6 @@ pub trait Extractor {
 }
 
 pub trait ExtractorExt: Sized + Extractor {
-    fn map<Fn>(self, map: Fn) -> Map<Self, Fn>;
-
-    fn async_map<Fn>(self, map: Fn) -> AsyncMap<Self, Fn>;
-
-    fn map_err<Fn>(self, map_err: Fn) -> ErrorMap<Self, Fn>;
-
-    fn convert<Fn>(self, convert: Fn) -> Convert<Self, Fn>;
-
-    fn async_convert<Fn>(self, convert: Fn) -> AsyncConvert<Self, Fn>;
-
-    fn chain<C>(self, chain: C) -> ChainExtractor<Self, C>;
-
-    fn chain_lite<Fn>(self, chain: Fn) -> ChainLite<Self, Fn>;
-
-    fn async_chain_lite<Fn>(self, chain: Fn) -> AsyncChainLite<Self, Fn>;
-
-    fn optional(self) -> Optional<Self> {
-        Optional::new(self)
-    }
-}
-
-impl<T> ExtractorExt for T
-where
-    T: Sized + Extractor,
-{
     fn map<Fn>(self, map: Fn) -> Map<Self, Fn> {
         Map::new(self, map)
     }
@@ -76,7 +53,13 @@ where
     fn optional(self) -> Optional<Self> {
         Optional::new(self)
     }
+
+    fn any<Ex>(self, other: Ex) -> Any<Self, Ex> {
+        Any::new(self, other)
+    }
 }
+
+impl<T> ExtractorExt for T where T: Sized + Extractor {}
 
 #[derive(Debug, Clone)]
 pub struct Map<T, Fn> {
