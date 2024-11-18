@@ -5,7 +5,7 @@ use http::{header::AUTHORIZATION, HeaderMap};
 use crate::authorize::header::{
     bearer::bearer_extractor::BearerExtractor,
     header_extractor::HeaderExtractor,
-    impls::default_header_extractor::{DefaultHeaderError, DefaultHeaderExtractor},
+    {DefaultHeaderError, DefaultHeaderExtractor},
 };
 
 #[derive(Debug)]

@@ -1,2 +1,4 @@
 pub mod default_jwt_authorizer;
-pub mod validation;
+mod validation;
+
+pub use validation::Validation;

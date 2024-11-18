@@ -5,11 +5,8 @@ use jsonwebtoken::{decode, decode_header, errors::Error as JwtError, jwk::JwkSet
 use serde::de::DeserializeOwned;
 
 use crate::{
-    authorize::{
-        authorizers::jwt::jwk_set::jwk_set_provider::JwkSetProvider,
-        header::bearer::bearer_extractor::BearerExtractor,
-    },
-    extract::extractor::Extractor,
+    authorize::{authorizers::jwt::jwk_set::JwkSetProvider, header::bearer::BearerExtractor},
+    extract::Extractor,
 };
 
 use super::validation::Validation;

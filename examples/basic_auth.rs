@@ -10,14 +10,11 @@ use std::collections::HashSet;
 use axum::{response::IntoResponse, routing::get, Router};
 use composable_tower_http::{
     authorize::{
-        authorizers::basic_auth::impls::{
-            basic_auth_user::BasicAuthUser,
-            default_basic_auth_authorizer::DefaultBasicAuthAuthorizer,
-        },
-        header::basic_auth::impls::default_basic_auth_extractor::DefaultBaiscAuthExtractor,
+        basic_auth::{BasicAuthUser, DefaultBasicAuthAuthorizer},
+        header::basic_auth::DefaultBasicAuthExtractor,
     },
-    extension::layer::ExtensionLayerExt,
-    extract::extracted::Extracted,
+    extension::ExtensionLayerExt,
+    extract::Extracted,
 };
 
 #[path = "../util/util.rs"]
@@ -37,7 +34,7 @@ async fn main() -> anyhow::Result<()> {
         .collect();
 
     let layer =
-        DefaultBasicAuthAuthorizer::new(DefaultBaiscAuthExtractor::new(), basic_auth_users).layer();
+        DefaultBasicAuthAuthorizer::new(DefaultBasicAuthExtractor::new(), basic_auth_users).layer();
 
     let app = Router::new()
         // curl -u "user-1:password-1" localhost:5000

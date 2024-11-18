@@ -14,14 +14,11 @@ use axum::{
 };
 use composable_tower_http::{
     authorize::{
-        authorizers::basic_auth::impls::{
-            basic_auth_user::BasicAuthUser,
-            default_basic_auth_authorizer::DefaultBasicAuthAuthorizer,
-        },
-        header::basic_auth::impls::default_basic_auth_extractor::DefaultBaiscAuthExtractor,
+        basic_auth::{BasicAuthUser, DefaultBasicAuthAuthorizer},
+        header::basic_auth::DefaultBasicAuthExtractor,
     },
-    extension::layer::ExtensionLayerExt,
-    extract::extractor::ExtractorExt,
+    extension::ExtensionLayerExt,
+    extract::ExtractorExt,
 };
 use http::StatusCode;
 
@@ -38,7 +35,7 @@ async fn main() -> anyhow::Result<()> {
         .collect();
 
     let authorizer =
-        DefaultBasicAuthAuthorizer::new(DefaultBaiscAuthExtractor::new(), basic_auth_users);
+        DefaultBasicAuthAuthorizer::new(DefaultBasicAuthExtractor::new(), basic_auth_users);
 
     let layer = authorizer.clone().layer();
 

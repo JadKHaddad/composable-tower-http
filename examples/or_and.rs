@@ -14,32 +14,19 @@ use anyhow::Context;
 use axum::{response::IntoResponse, routing::get, Router};
 use composable_tower_http::{
     authorize::{
-        authorizers::{
-            api_key::impls::{
-                api_key::ApiKey, default_api_key_authorizer::DefaultApiKeyAuthorizer,
-            },
-            basic_auth::impls::{
-                basic_auth_user::BasicAuthUser,
-                default_basic_auth_authorizer::DefaultBasicAuthAuthorizer,
-            },
-            jwt::{
-                impls::{
-                    default_jwt_authorizer::DefaultJwtAuthorizerBuilder, validation::Validation,
-                },
-                jwk_set::impls::rotating::{
-                    impls::http_jwk_set_fetcher::HttpJwkSetFetcher,
-                    rotating_jwk_set_provider::RotatingJwkSetProvider,
-                },
-            },
-        },
+        api_key::{ApiKey, DefaultApiKeyAuthorizer},
+        basic_auth::{BasicAuthUser, DefaultBasicAuthAuthorizer},
         header::{
-            basic_auth::impls::default_basic_auth_extractor::DefaultBaiscAuthExtractor,
-            bearer::impls::default_bearer_extractor::DefaultBearerExtractor,
-            impls::default_header_extractor::DefaultHeaderExtractor,
+            basic_auth::DefaultBasicAuthExtractor, bearer::DefaultBearerExtractor,
+            DefaultHeaderExtractor,
+        },
+        jwt::{
+            jwk_set::{fetch::HttpJwkSetFetcher, rotating::RotatingJwkSetProvider},
+            DefaultJwtAuthorizerBuilder, Validation,
         },
     },
-    extension::layer::ExtensionLayerExt,
-    extract::{and::And, extracted::Extracted, extractor::ExtractorExt, or::Or},
+    extension::ExtensionLayerExt,
+    extract::{And, Extracted, Extractor, ExtractorExt, Or},
 };
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -86,7 +73,7 @@ async fn main() -> anyhow::Result<()> {
         .collect();
 
     let basic_auth_authorizer =
-        DefaultBasicAuthAuthorizer::new(DefaultBaiscAuthExtractor::new(), basic_auth_users);
+        DefaultBasicAuthAuthorizer::new(DefaultBasicAuthExtractor::new(), basic_auth_users);
 
     let jwks_uri = std::env::var("JWKS_URI").unwrap_or_else(|_| {
         String::from("https://keycloak.com/realms/master/protocol/openid-connect/certs")
@@ -106,9 +93,15 @@ async fn main() -> anyhow::Result<()> {
     )
     .build::<Claims>();
 
-    let layer = jwt_authorizer
-        .or(api_key_authorizer.and(basic_auth_authorizer))
-        .layer();
+    let autorizer = jwt_authorizer.or(api_key_authorizer.and(basic_auth_authorizer));
+
+    // If things got too complicated, you can always check the extracted type.
+    tracing::debug!(
+        "The extracted type name is: {}",
+        autorizer.extracted_type_name()
+    );
+
+    let layer = autorizer.layer();
 
     let app = Router::new()
         // curl -u "user-1:password-1" -H "x-api-key: api-key-1" localhost:5000

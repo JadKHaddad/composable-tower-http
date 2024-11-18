@@ -7,31 +7,31 @@ pub trait BasicAuthExtractor {
 }
 
 pub trait BasicAuthExtractorExt: Sized + BasicAuthExtractor {
-    fn map_err<Fn>(self, map_err: Fn) -> ErrorMap<Self, Fn>;
+    fn map_err<Fn>(self, map_err: Fn) -> MapError<Self, Fn>;
 }
 
 impl<T> BasicAuthExtractorExt for T
 where
     T: Sized + BasicAuthExtractor,
 {
-    fn map_err<Fn>(self, map_err: Fn) -> ErrorMap<Self, Fn> {
-        ErrorMap::new(self, map_err)
+    fn map_err<Fn>(self, map_err: Fn) -> MapError<Self, Fn> {
+        MapError::new(self, map_err)
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct ErrorMap<T, Fn> {
+pub struct MapError<T, Fn> {
     inner: T,
     map_err: Fn,
 }
 
-impl<T, Fn> ErrorMap<T, Fn> {
+impl<T, Fn> MapError<T, Fn> {
     pub const fn new(inner: T, map_err: Fn) -> Self {
         Self { inner, map_err }
     }
 }
 
-impl<B, Fn, E> BasicAuthExtractor for ErrorMap<B, Fn>
+impl<B, Fn, E> BasicAuthExtractor for MapError<B, Fn>
 where
     B: BasicAuthExtractor + Sync,
     Fn: FnOnce(B::Error) -> E + Copy + Sync,

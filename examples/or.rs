@@ -10,22 +10,12 @@ use std::collections::HashSet;
 use axum::{response::IntoResponse, routing::get, Router};
 use composable_tower_http::{
     authorize::{
-        authorizers::{
-            api_key::impls::{
-                api_key::ApiKey, default_api_key_authorizer::DefaultApiKeyAuthorizer,
-            },
-            basic_auth::impls::{
-                basic_auth_user::BasicAuthUser,
-                default_basic_auth_authorizer::DefaultBasicAuthAuthorizer,
-            },
-        },
-        header::{
-            basic_auth::impls::default_basic_auth_extractor::DefaultBaiscAuthExtractor,
-            impls::default_header_extractor::DefaultHeaderExtractor,
-        },
+        api_key::{ApiKey, DefaultApiKeyAuthorizer},
+        basic_auth::{BasicAuthUser, DefaultBasicAuthAuthorizer},
+        header::{basic_auth::DefaultBasicAuthExtractor, DefaultHeaderExtractor},
     },
-    extension::layer::ExtensionLayerExt,
-    extract::{extracted::Extracted, extractor::ExtractorExt, or::Or},
+    extension::ExtensionLayerExt,
+    extract::{Extracted, ExtractorExt, Or},
 };
 
 #[path = "../util/util.rs"]
@@ -58,7 +48,7 @@ async fn main() -> anyhow::Result<()> {
         .collect();
 
     let basic_auth_authorizer =
-        DefaultBasicAuthAuthorizer::new(DefaultBaiscAuthExtractor::new(), basic_auth_users);
+        DefaultBasicAuthAuthorizer::new(DefaultBasicAuthExtractor::new(), basic_auth_users);
 
     let layer = api_key_authorizer.or(basic_auth_authorizer).layer();
 
