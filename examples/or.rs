@@ -21,7 +21,7 @@ use composable_tower_http::{
         },
         header::{
             basic_auth::impls::default_basic_auth_extractor::DefaultBaiscAuthExtractor,
-            impls::default_header_extractor::DefaultHeaderExtractor,
+            DefaultHeaderExtractor,
         },
     },
     extension::ExtensionLayerExt,

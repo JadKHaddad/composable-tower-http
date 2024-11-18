@@ -13,7 +13,7 @@ use composable_tower_http::{
         authorizers::api_key::impls::{
             api_key::ApiKey, default_api_key_authorizer::DefaultApiKeyAuthorizer,
         },
-        header::impls::default_header_extractor::DefaultHeaderExtractor,
+        header::DefaultHeaderExtractor,
     },
     extension::ExtensionLayerExt,
     extract::{Extracted, ExtractorExt},
