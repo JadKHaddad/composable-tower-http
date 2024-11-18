@@ -1,6 +1,6 @@
 [package]
 name = "composable-tower-http"
-version = "0.1.3"
+version = "0.2.0"
 edition = "2021"
 authors = ["Jad K. Haddad <jadkhaddad@gmail.com>"]
 license = "MIT OR Apache-2.0"
