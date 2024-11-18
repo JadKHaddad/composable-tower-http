@@ -39,7 +39,12 @@ use composable_tower_http::{
         },
     },
     extension::layer::ExtensionLayerExt,
-    extract::{and::And, extracted::Extracted, extractor::ExtractorExt, or::Or},
+    extract::{
+        and::And,
+        extracted::Extracted,
+        extractor::{Extractor, ExtractorExt},
+        or::Or,
+    },
 };
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -106,9 +111,15 @@ async fn main() -> anyhow::Result<()> {
     )
     .build::<Claims>();
 
-    let layer = jwt_authorizer
-        .or(api_key_authorizer.and(basic_auth_authorizer))
-        .layer();
+    let autorizer = jwt_authorizer.or(api_key_authorizer.and(basic_auth_authorizer));
+
+    // If things got too complicated, you can always check the extracted type.
+    tracing::debug!(
+        "The extracted type name is: {}",
+        autorizer.extracted_type_name()
+    );
+
+    let layer = autorizer.layer();
 
     let app = Router::new()
         // curl -u "user-1:password-1" -H "x-api-key: api-key-1" localhost:5000

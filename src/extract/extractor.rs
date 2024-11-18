@@ -15,6 +15,10 @@ pub trait Extractor {
         &self,
         headers: &HeaderMap,
     ) -> impl Future<Output = Result<Self::Extracted, Self::Error>> + Send;
+
+    fn extracted_type_name(&self) -> &'static str {
+        std::any::type_name::<Self::Extracted>()
+    }
 }
 
 pub trait ExtractorExt: Sized + Extractor {
