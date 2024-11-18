@@ -38,13 +38,8 @@ use composable_tower_http::{
             impls::default_header_extractor::DefaultHeaderExtractor,
         },
     },
-    extension::layer::ExtensionLayerExt,
-    extract::{
-        and::And,
-        extracted::Extracted,
-        extractor::{Extractor, ExtractorExt},
-        or::Or,
-    },
+    extension::ExtensionLayerExt,
+    extract::{And, Extracted, Extractor, ExtractorExt, Or},
 };
 use reqwest::Client;
 use serde::{Deserialize, Serialize};

@@ -1,8 +1,7 @@
 use std::{collections::HashSet, ops::Deref, sync::Arc};
 
 use crate::{
-    authorize::header::basic_auth::basic_auth_extractor::BasicAuthExtractor,
-    extract::extractor::Extractor,
+    authorize::header::basic_auth::basic_auth_extractor::BasicAuthExtractor, extract::Extractor,
 };
 
 use super::basic_auth_user::BasicAuthUser;

@@ -11,31 +11,31 @@ pub trait JwkSetProvider {
 }
 
 pub trait JwkSetProviderExt: Sized + JwkSetProvider {
-    fn map_err<Fn>(self, map_err: Fn) -> ErrorMap<Self, Fn>;
+    fn map_err<Fn>(self, map_err: Fn) -> MapError<Self, Fn>;
 }
 
 impl<T> JwkSetProviderExt for T
 where
     T: Sized + JwkSetProvider,
 {
-    fn map_err<Fn>(self, map_err: Fn) -> ErrorMap<Self, Fn> {
-        ErrorMap::new(self, map_err)
+    fn map_err<Fn>(self, map_err: Fn) -> MapError<Self, Fn> {
+        MapError::new(self, map_err)
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct ErrorMap<T, Fn> {
+pub struct MapError<T, Fn> {
     inner: T,
     map_err: Fn,
 }
 
-impl<T, Fn> ErrorMap<T, Fn> {
+impl<T, Fn> MapError<T, Fn> {
     pub const fn new(inner: T, map_err: Fn) -> Self {
         Self { inner, map_err }
     }
 }
 
-impl<J, Fn, E> JwkSetProvider for ErrorMap<J, Fn>
+impl<J, Fn, E> JwkSetProvider for MapError<J, Fn>
 where
     J: JwkSetProvider + Sync,
     Fn: FnOnce(J::Error) -> E + Copy + Sync,

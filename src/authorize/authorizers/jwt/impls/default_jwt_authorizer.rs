@@ -9,7 +9,7 @@ use crate::{
         authorizers::jwt::jwk_set::jwk_set_provider::JwkSetProvider,
         header::bearer::bearer_extractor::BearerExtractor,
     },
-    extract::extractor::Extractor,
+    extract::Extractor,
 };
 
 use super::validation::Validation;

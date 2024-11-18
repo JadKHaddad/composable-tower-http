@@ -16,8 +16,8 @@ use composable_tower_http::{
         },
         header::basic_auth::impls::default_basic_auth_extractor::DefaultBaiscAuthExtractor,
     },
-    extension::layer::ExtensionLayerExt,
-    extract::extracted::Extracted,
+    extension::ExtensionLayerExt,
+    extract::Extracted,
 };
 
 #[path = "../util/util.rs"]

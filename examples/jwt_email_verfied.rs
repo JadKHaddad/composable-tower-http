@@ -18,9 +18,8 @@ use composable_tower_http::{
         },
         header::bearer::impls::default_bearer_extractor::DefaultBearerExtractor,
     },
-    chain::chainer::Chainer,
-    extension::layer::ExtensionLayerExt,
-    extract::{extracted::Extracted, extractor::ExtractorExt},
+    extension::ExtensionLayerExt,
+    extract::{Chainer, Extracted, ExtractorExt},
 };
 use http::StatusCode;
 use reqwest::Client;

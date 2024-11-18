@@ -18,8 +18,8 @@ use composable_tower_http::{
         },
         header::bearer::impls::default_bearer_extractor::DefaultBearerExtractor,
     },
-    extension::layer::ExtensionLayerExt,
-    extract::extracted::Extracted,
+    extension::ExtensionLayerExt,
+    extract::Extracted,
 };
 use reqwest::Client;
 use serde::{Deserialize, Serialize};

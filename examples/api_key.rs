@@ -15,8 +15,8 @@ use composable_tower_http::{
         },
         header::impls::default_header_extractor::DefaultHeaderExtractor,
     },
-    extension::layer::ExtensionLayerExt,
-    extract::extracted::Extracted,
+    extension::ExtensionLayerExt,
+    extract::Extracted,
 };
 
 #[path = "../util/util.rs"]

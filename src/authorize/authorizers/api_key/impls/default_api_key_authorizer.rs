@@ -1,6 +1,6 @@
 use std::{borrow::Cow, collections::HashSet, ops::Deref, sync::Arc};
 
-use crate::{authorize::header::header_extractor::HeaderExtractor, extract::extractor::Extractor};
+use crate::{authorize::header::header_extractor::HeaderExtractor, extract::Extractor};
 
 use super::api_key::ApiKey;
 

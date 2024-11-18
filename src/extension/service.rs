@@ -7,7 +7,7 @@ use std::{
 use http::Request;
 use tower::Service;
 
-use crate::extract::{extractor::Extractor, sealed_extracted::SealedExtracted};
+use crate::extract::{Extractor, SealedExtracted};
 
 #[derive(Debug, Clone)]
 pub struct ExtensionService<S, Ex> {
