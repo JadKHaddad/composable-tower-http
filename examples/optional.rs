@@ -10,9 +10,7 @@ use std::collections::HashSet;
 use axum::{response::IntoResponse, routing::get, Router};
 use composable_tower_http::{
     authorize::{
-        authorizers::api_key::impls::{
-            api_key::ApiKey, default_api_key_authorizer::DefaultApiKeyAuthorizer,
-        },
+        api_key::{ApiKey, DefaultApiKeyAuthorizer},
         header::DefaultHeaderExtractor,
     },
     extension::ExtensionLayerExt,

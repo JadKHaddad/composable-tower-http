@@ -14,10 +14,7 @@ use axum::{
 };
 use composable_tower_http::{
     authorize::{
-        authorizers::basic_auth::impls::{
-            basic_auth_user::BasicAuthUser,
-            default_basic_auth_authorizer::DefaultBasicAuthAuthorizer,
-        },
+        basic_auth::{BasicAuthUser, DefaultBasicAuthAuthorizer},
         header::basic_auth::DefaultBasicAuthExtractor,
     },
     extension::ExtensionLayerExt,

@@ -3,9 +3,9 @@ use std::time::Instant;
 use jsonwebtoken::jwk::JwkSet;
 use tokio::sync::{RwLock, RwLockReadGuard};
 
-use crate::authorize::authorizers::jwt::jwk_set::jwk_set_provider::JwkSetProvider;
-
-use super::jwk_set_fetcher::JwkSetFetcher;
+use crate::authorize::{
+    authorizers::jwt::jwk_set::jwk_set_provider::JwkSetProvider, jwt::jwk_set::fetch::JwkSetFetcher,
+};
 
 #[derive(Debug)]
 pub struct JwkSetHolder {
@@ -130,10 +130,7 @@ mod tests {
         AlgorithmParameters, CommonParameters, Jwk, JwkSet, OctetKeyParameters, OctetKeyType,
     };
 
-    use crate::{
-        authorize::authorizers::jwt::jwk_set::impls::rotating::jwk_set_fetcher::MockJwkSetFetcher,
-        test::init_tracing,
-    };
+    use crate::{authorize::jwt::jwk_set::fetch::MockJwkSetFetcher, test::init_tracing};
 
     use super::*;
 

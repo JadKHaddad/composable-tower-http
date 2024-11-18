@@ -14,27 +14,15 @@ use anyhow::Context;
 use axum::{response::IntoResponse, routing::get, Router};
 use composable_tower_http::{
     authorize::{
-        authorizers::{
-            api_key::impls::{
-                api_key::ApiKey, default_api_key_authorizer::DefaultApiKeyAuthorizer,
-            },
-            basic_auth::impls::{
-                basic_auth_user::BasicAuthUser,
-                default_basic_auth_authorizer::DefaultBasicAuthAuthorizer,
-            },
-            jwt::{
-                impls::{
-                    default_jwt_authorizer::DefaultJwtAuthorizerBuilder, validation::Validation,
-                },
-                jwk_set::impls::rotating::{
-                    impls::http_jwk_set_fetcher::HttpJwkSetFetcher,
-                    rotating_jwk_set_provider::RotatingJwkSetProvider,
-                },
-            },
-        },
+        api_key::{ApiKey, DefaultApiKeyAuthorizer},
+        basic_auth::{BasicAuthUser, DefaultBasicAuthAuthorizer},
         header::{
             basic_auth::DefaultBasicAuthExtractor, bearer::DefaultBearerExtractor,
             DefaultHeaderExtractor,
+        },
+        jwt::{
+            jwk_set::{fetch::HttpJwkSetFetcher, rotating::RotatingJwkSetProvider},
+            DefaultJwtAuthorizerBuilder, Validation,
         },
     },
     extension::ExtensionLayerExt,

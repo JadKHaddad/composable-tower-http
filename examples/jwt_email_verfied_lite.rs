@@ -9,14 +9,11 @@ use anyhow::Context;
 use axum::{response::IntoResponse, routing::get, Json, Router};
 use composable_tower_http::{
     authorize::{
-        authorizers::jwt::{
-            impls::{default_jwt_authorizer::DefaultJwtAuthorizerBuilder, validation::Validation},
-            jwk_set::impls::rotating::{
-                impls::http_jwk_set_fetcher::HttpJwkSetFetcher,
-                rotating_jwk_set_provider::RotatingJwkSetProvider,
-            },
-        },
         header::bearer::DefaultBearerExtractor,
+        jwt::{
+            jwk_set::{fetch::HttpJwkSetFetcher, rotating::RotatingJwkSetProvider},
+            DefaultJwtAuthorizerBuilder, Validation,
+        },
     },
     extension::ExtensionLayerExt,
     extract::{Extracted, ExtractorExt},

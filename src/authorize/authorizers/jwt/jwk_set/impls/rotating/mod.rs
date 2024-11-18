@@ -1,4 +1,7 @@
-pub mod background_rotating_jwk_set_provider;
-pub mod impls;
-pub mod jwk_set_fetcher;
-pub mod rotating_jwk_set_provider;
+mod background_rotating_jwk_set_provider;
+mod rotating_jwk_set_provider;
+
+pub use background_rotating_jwk_set_provider::{
+    BackgroundRotatingJwkSetProvideError, BackgroundRotatingJwkSetProvider,
+};
+pub use rotating_jwk_set_provider::{RotatingJwkSetProvideError, RotatingJwkSetProvider};

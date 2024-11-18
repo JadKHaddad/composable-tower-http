@@ -10,7 +10,7 @@ repository = "https://github.com/JadKHaddad/composable-tower-http"
 keywords = ["tower", "http", "middleware", "extension", "composable"]
 
 [features]
-default = ["axum"]
+default = []
 axum = ["dep:axum"]
 
 [dependencies]
@@ -19,7 +19,7 @@ tower-layer = "0.3.0"
 tokio = { version = "1.41.1", features = ["sync", "macros"] }
 http = "1.1.0"
 jsonwebtoken = "9.2.0"
-axum = { version = "0.7.5", optional = true }
+axum = { version = "0.7.9", optional = true }
 serde = "1.0.215"
 thiserror = "2.0.3"
 tracing = "0.1.40"
@@ -32,7 +32,7 @@ tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 anyhow = "1.0.93"
 dotenvy = "0.15.7"
 tower-http = { version = "0.6.1", features = ["trace"] }
-mockall = "0.13.0"
+mockall = "0.13.1"
 
 [[example]]
 name = "api_key"

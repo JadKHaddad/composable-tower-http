@@ -1,6 +1,6 @@
 use jsonwebtoken::jwk::JwkSet;
 
-use crate::authorize::authorizers::jwt::jwk_set::impls::rotating::jwk_set_fetcher::JwkSetFetcher;
+use crate::authorize::jwt::jwk_set::fetch::JwkSetFetcher;
 
 #[derive(Debug)]
 pub struct HttpJwkSetFetcher {
@@ -15,8 +15,12 @@ impl HttpJwkSetFetcher {
             http_client,
         }
     }
+}
 
-    pub async fn fetch(&self) -> Result<JwkSet, HttpJwkSetFetchError> {
+impl JwkSetFetcher for HttpJwkSetFetcher {
+    type Error = HttpJwkSetFetchError;
+
+    async fn fetch_jwk_set(&self) -> Result<JwkSet, Self::Error> {
         tracing::debug!("Fetching JWK set");
 
         let jwks = self
@@ -30,14 +34,6 @@ impl HttpJwkSetFetcher {
             .map_err(HttpJwkSetFetchError::Parse)?;
 
         Ok(jwks)
-    }
-}
-
-impl JwkSetFetcher for HttpJwkSetFetcher {
-    type Error = HttpJwkSetFetchError;
-
-    async fn fetch_jwk_set(&self) -> Result<JwkSet, Self::Error> {
-        self.fetch().await
     }
 }
 
