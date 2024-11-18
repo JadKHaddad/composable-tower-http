@@ -16,7 +16,7 @@ use composable_tower_http::{
                 rotating_jwk_set_provider::RotatingJwkSetProvider,
             },
         },
-        header::bearer::impls::default_bearer_extractor::DefaultBearerExtractor,
+        header::bearer::DefaultBearerExtractor,
     },
     extension::ExtensionLayerExt,
     extract::Extracted,

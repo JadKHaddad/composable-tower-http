@@ -1,2 +1,5 @@
-pub mod bearer_extractor;
-pub mod impls;
+mod bearer_extractor;
+mod impls;
+
+pub use bearer_extractor::{BearerExtractor, BearerExtractorExt, MapError};
+pub use impls::default_bearer_extractor::{DefaultBearerError, DefaultBearerExtractor};

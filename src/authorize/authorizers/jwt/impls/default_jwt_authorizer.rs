@@ -7,7 +7,7 @@ use serde::de::DeserializeOwned;
 use crate::{
     authorize::{
         authorizers::jwt::jwk_set::jwk_set_provider::JwkSetProvider,
-        header::bearer::bearer_extractor::BearerExtractor,
+        header::bearer::BearerExtractor,
     },
     extract::Extractor,
 };
