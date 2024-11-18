@@ -19,10 +19,7 @@ use composable_tower_http::{
                 default_basic_auth_authorizer::DefaultBasicAuthAuthorizer,
             },
         },
-        header::{
-            basic_auth::impls::default_basic_auth_extractor::DefaultBaiscAuthExtractor,
-            DefaultHeaderExtractor,
-        },
+        header::{basic_auth::DefaultBasicAuthExtractor, DefaultHeaderExtractor},
     },
     extension::ExtensionLayerExt,
     extract::{And, Extracted, ExtractorExt},
@@ -55,7 +52,7 @@ async fn main() -> anyhow::Result<()> {
         .collect();
 
     let basic_auth_authorizer =
-        DefaultBasicAuthAuthorizer::new(DefaultBaiscAuthExtractor::new(), basic_auth_users);
+        DefaultBasicAuthAuthorizer::new(DefaultBasicAuthExtractor::new(), basic_auth_users);
 
     // This is very similar to chaining layers,
     // but the `And` extractor will contain both extracted values and will prevent similar extracted types from overlapping.

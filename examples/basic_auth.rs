@@ -14,7 +14,7 @@ use composable_tower_http::{
             basic_auth_user::BasicAuthUser,
             default_basic_auth_authorizer::DefaultBasicAuthAuthorizer,
         },
-        header::basic_auth::impls::default_basic_auth_extractor::DefaultBaiscAuthExtractor,
+        header::basic_auth::DefaultBasicAuthExtractor,
     },
     extension::ExtensionLayerExt,
     extract::Extracted,
@@ -37,7 +37,7 @@ async fn main() -> anyhow::Result<()> {
         .collect();
 
     let layer =
-        DefaultBasicAuthAuthorizer::new(DefaultBaiscAuthExtractor::new(), basic_auth_users).layer();
+        DefaultBasicAuthAuthorizer::new(DefaultBasicAuthExtractor::new(), basic_auth_users).layer();
 
     let app = Router::new()
         // curl -u "user-1:password-1" localhost:5000

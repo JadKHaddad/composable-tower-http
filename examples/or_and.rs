@@ -33,8 +33,8 @@ use composable_tower_http::{
             },
         },
         header::{
-            basic_auth::impls::default_basic_auth_extractor::DefaultBaiscAuthExtractor,
-            bearer::DefaultBearerExtractor, DefaultHeaderExtractor,
+            basic_auth::DefaultBasicAuthExtractor, bearer::DefaultBearerExtractor,
+            DefaultHeaderExtractor,
         },
     },
     extension::ExtensionLayerExt,
@@ -85,7 +85,7 @@ async fn main() -> anyhow::Result<()> {
         .collect();
 
     let basic_auth_authorizer =
-        DefaultBasicAuthAuthorizer::new(DefaultBaiscAuthExtractor::new(), basic_auth_users);
+        DefaultBasicAuthAuthorizer::new(DefaultBasicAuthExtractor::new(), basic_auth_users);
 
     let jwks_uri = std::env::var("JWKS_URI").unwrap_or_else(|_| {
         String::from("https://keycloak.com/realms/master/protocol/openid-connect/certs")
