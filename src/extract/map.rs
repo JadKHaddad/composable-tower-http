@@ -43,7 +43,7 @@ impl<T, Fn> MapError<T, Fn> {
 impl<Ex, Fn, T> Extractor for Map<Ex, Fn>
 where
     Ex: Extractor + Sync,
-    Fn: FnOnce(Ex::Extracted) -> T + Copy + Sync,
+    Fn: FnOnce(Ex::Extracted) -> T + Clone + Sync,
     T: Clone + Send + Sync,
 {
     type Extracted = T;
@@ -51,14 +51,17 @@ where
     type Error = Ex::Error;
 
     async fn extract(&self, headers: &HeaderMap) -> Result<Self::Extracted, Self::Error> {
-        self.inner.extract(headers).await.map(|ex| (self.map)(ex))
+        self.inner
+            .extract(headers)
+            .await
+            .map(|ex| (self.map.clone())(ex))
     }
 }
 
 impl<Ex, Fn, T, Fut> Extractor for AsyncMap<Ex, Fn>
 where
     Ex: Extractor + Sync,
-    Fn: FnOnce(Ex::Extracted) -> Fut + Copy + Sync,
+    Fn: FnOnce(Ex::Extracted) -> Fut + Clone + Sync,
     Fut: Future<Output = T> + Send,
     T: Clone + Send + Sync,
 {
@@ -69,7 +72,7 @@ where
     async fn extract(&self, headers: &HeaderMap) -> Result<Self::Extracted, Self::Error> {
         let extracted = self.inner.extract(headers).await?;
 
-        let mapped = (self.map)(extracted).await;
+        let mapped = (self.map.clone())(extracted).await;
 
         Ok(mapped)
     }
@@ -78,7 +81,7 @@ where
 impl<Ex, Fn, E> Extractor for MapError<Ex, Fn>
 where
     Ex: Extractor + Sync,
-    Fn: FnOnce(Ex::Error) -> E + Copy + Sync,
+    Fn: FnOnce(Ex::Error) -> E + Clone + Sync,
 {
     type Extracted = Ex::Extracted;
 
@@ -88,6 +91,6 @@ where
         self.inner
             .extract(headers)
             .await
-            .map_err(|err| (self.map_err)(err))
+            .map_err(|err| (self.map_err.clone())(err))
     }
 }

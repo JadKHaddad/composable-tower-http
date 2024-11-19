@@ -31,7 +31,7 @@ impl<T, Fn> AsyncConvert<T, Fn> {
 impl<Ex, Fn, T, E> Extractor for Convert<Ex, Fn>
 where
     Ex: Extractor + Sync,
-    Fn: FnOnce(Result<Ex::Extracted, Ex::Error>) -> Result<T, E> + Copy + Sync,
+    Fn: FnOnce(Result<Ex::Extracted, Ex::Error>) -> Result<T, E> + Clone + Sync,
     T: Clone + Send + Sync,
 {
     type Extracted = T;
@@ -41,14 +41,14 @@ where
     async fn extract(&self, headers: &HeaderMap) -> Result<Self::Extracted, Self::Error> {
         let ex = self.inner.extract(headers).await;
 
-        (self.convert)(ex)
+        (self.convert.clone())(ex)
     }
 }
 
 impl<Ex, Fn, T, E, Fut> Extractor for AsyncConvert<Ex, Fn>
 where
     Ex: Extractor + Sync,
-    Fn: FnOnce(Result<Ex::Extracted, Ex::Error>) -> Fut + Copy + Sync,
+    Fn: FnOnce(Result<Ex::Extracted, Ex::Error>) -> Fut + Clone + Sync,
     Fut: Future<Output = Result<T, E>> + Send,
     T: Clone + Send + Sync,
 {
@@ -59,6 +59,6 @@ where
     async fn extract(&self, headers: &HeaderMap) -> Result<Self::Extracted, Self::Error> {
         let ex = self.inner.extract(headers).await;
 
-        (self.convert)(ex).await
+        (self.convert.clone())(ex).await
     }
 }

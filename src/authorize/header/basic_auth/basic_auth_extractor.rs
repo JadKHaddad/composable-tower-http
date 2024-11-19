@@ -34,11 +34,13 @@ impl<T, Fn> MapError<T, Fn> {
 impl<B, Fn, E> BasicAuthExtractor for MapError<B, Fn>
 where
     B: BasicAuthExtractor + Sync,
-    Fn: FnOnce(B::Error) -> E + Copy + Sync,
+    Fn: FnOnce(B::Error) -> E + Clone + Sync,
 {
     type Error = E;
 
     fn extract_basic_auth(&self, headers: &HeaderMap) -> Result<(String, String), Self::Error> {
-        self.inner.extract_basic_auth(headers).map_err(self.map_err)
+        self.inner
+            .extract_basic_auth(headers)
+            .map_err(self.map_err.clone())
     }
 }

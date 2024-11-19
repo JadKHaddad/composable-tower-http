@@ -38,7 +38,7 @@ impl<T, Fn> MapError<T, Fn> {
 impl<J, Fn, E> JwkSetProvider for MapError<J, Fn>
 where
     J: JwkSetProvider + Sync,
-    Fn: FnOnce(J::Error) -> E + Copy + Sync,
+    Fn: FnOnce(J::Error) -> E + Clone + Sync,
 {
     type Error = E;
 
@@ -46,6 +46,6 @@ where
         self.inner
             .provide_jwk_set()
             .await
-            .map_err(|err| (self.map_err)(err))
+            .map_err(|err| (self.map_err.clone())(err))
     }
 }
