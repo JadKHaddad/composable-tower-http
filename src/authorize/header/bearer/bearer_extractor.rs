@@ -34,11 +34,13 @@ impl<T, Fn> MapError<T, Fn> {
 impl<B, Fn, E> BearerExtractor for MapError<B, Fn>
 where
     B: BearerExtractor + Sync,
-    Fn: FnOnce(B::Error) -> E + Copy + Sync,
+    Fn: FnOnce(B::Error) -> E + Clone + Sync,
 {
     type Error = E;
 
     fn extract_bearer<'a>(&self, headers: &'a HeaderMap) -> Result<&'a str, Self::Error> {
-        self.inner.extract_bearer(headers).map_err(self.map_err)
+        self.inner
+            .extract_bearer(headers)
+            .map_err(self.map_err.clone())
     }
 }

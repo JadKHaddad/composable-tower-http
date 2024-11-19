@@ -34,11 +34,13 @@ impl<T, Fn> MapError<T, Fn> {
 impl<H, Fn, E> HeaderExtractor for MapError<H, Fn>
 where
     H: HeaderExtractor + Sync,
-    Fn: FnOnce(H::Error) -> E + Copy + Sync,
+    Fn: FnOnce(H::Error) -> E + Clone + Sync,
 {
     type Error = E;
 
     fn extract_header<'a>(&self, headers: &'a HeaderMap) -> Result<&'a str, Self::Error> {
-        self.inner.extract_header(headers).map_err(self.map_err)
+        self.inner
+            .extract_header(headers)
+            .map_err(self.map_err.clone())
     }
 }

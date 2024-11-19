@@ -31,7 +31,7 @@ impl<T, Fn> AsyncChainLite<T, Fn> {
 impl<Ex, Fn, T, E> Extractor for ChainLite<Ex, Fn>
 where
     Ex: Extractor + Sync,
-    Fn: FnOnce(Ex::Extracted) -> Result<T, E> + Copy + Sync,
+    Fn: FnOnce(Ex::Extracted) -> Result<T, E> + Clone + Sync,
     T: Clone + Send + Sync + 'static,
     E: From<Ex::Error>,
 {
@@ -42,14 +42,14 @@ where
     async fn extract(&self, headers: &HeaderMap) -> Result<Self::Extracted, Self::Error> {
         let ex = self.inner.extract(headers).await?;
 
-        (self.chain)(ex)
+        (self.chain.clone())(ex)
     }
 }
 
 impl<Ex, Fn, T, E, Fut> Extractor for AsyncChainLite<Ex, Fn>
 where
     Ex: Extractor + Sync,
-    Fn: FnOnce(Ex::Extracted) -> Fut + Copy + Sync,
+    Fn: FnOnce(Ex::Extracted) -> Fut + Clone + Sync,
     Fut: Future<Output = Result<T, E>> + Send,
     T: Clone + Send + Sync + 'static,
     E: From<Ex::Error>,
@@ -61,6 +61,6 @@ where
     async fn extract(&self, headers: &HeaderMap) -> Result<Self::Extracted, Self::Error> {
         let ex = self.inner.extract(headers).await?;
 
-        (self.chain)(ex).await
+        (self.chain.clone())(ex).await
     }
 }
