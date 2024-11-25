@@ -64,7 +64,7 @@ async fn main() -> anyhow::Result<()> {
         Validation::new().aud(&["account"]).iss(&[iss]),
     )
     .build::<Claims>()
-    .layer();
+    .extension_layer();
 
     // These layers will look into the extracted claims in the request extensions and perform a modification removing the old claims and inserting modified claims.
 

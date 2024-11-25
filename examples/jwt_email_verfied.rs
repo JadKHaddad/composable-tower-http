@@ -65,9 +65,9 @@ async fn main() -> anyhow::Result<()> {
     )
     .build::<Claims>();
 
-    let layer = authorizer.clone().layer();
+    let layer = authorizer.clone().extension_layer();
 
-    let chain_layer = authorizer.clone().chain(EmailVerifier::new()).layer();
+    let chain_layer = authorizer.clone().chain(EmailVerifier::new()).extension_layer();
 
     let app = Router::new()
         // curl -H "Authorization: Bearer <token>" localhost:5000

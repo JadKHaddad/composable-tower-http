@@ -101,7 +101,7 @@ async fn main() -> anyhow::Result<()> {
         autorizer.extracted_type_name()
     );
 
-    let layer = autorizer.layer();
+    let layer = autorizer.extension_layer();
 
     let app = Router::new()
         // curl -u "user-1:password-1" -H "x-api-key: api-key-1" localhost:5000

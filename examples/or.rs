@@ -50,7 +50,7 @@ async fn main() -> anyhow::Result<()> {
     let basic_auth_authorizer =
         DefaultBasicAuthAuthorizer::new(DefaultBasicAuthExtractor::new(), basic_auth_users);
 
-    let layer = api_key_authorizer.or(basic_auth_authorizer).layer();
+    let layer = api_key_authorizer.or(basic_auth_authorizer).extension_layer();
 
     let app = Router::new()
         // curl -H "x-api-key: api-key-1" localhost:5000

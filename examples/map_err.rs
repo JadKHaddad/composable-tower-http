@@ -37,9 +37,9 @@ async fn main() -> anyhow::Result<()> {
     let authorizer =
         DefaultBasicAuthAuthorizer::new(DefaultBasicAuthExtractor::new(), basic_auth_users);
 
-    let layer = authorizer.clone().layer();
+    let layer = authorizer.clone().extension_layer();
 
-    let map_err_layer = authorizer.clone().map_err(|_| MyBasicAuthError).layer();
+    let map_err_layer = authorizer.clone().map_err(|_| MyBasicAuthError).extension_layer();
 
     let app = Router::new()
         // curl -u "user-1:wrong" localhost:5000
