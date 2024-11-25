@@ -2,15 +2,15 @@ use std::marker::PhantomData;
 
 use tower::Layer;
 
-use super::service::ModifyService;
+use super::service::ModificationService;
 
 #[derive(Debug, Clone)]
-pub struct ModifyLayer<M, T> {
+pub struct ModificationLayer<M, T> {
     modifier: M,
     _phantom: PhantomData<T>,
 }
 
-impl<M, T> ModifyLayer<M, T> {
+impl<M, T> ModificationLayer<M, T> {
     pub const fn new(modifier: M) -> Self {
         Self {
             modifier,
@@ -19,26 +19,26 @@ impl<M, T> ModifyLayer<M, T> {
     }
 }
 
-impl<S, M, T> Layer<S> for ModifyLayer<M, T>
+impl<S, M, T> Layer<S> for ModificationLayer<M, T>
 where
     M: Clone,
 {
-    type Service = ModifyService<S, M, T>;
+    type Service = ModificationService<S, M, T>;
 
     fn layer(&self, service: S) -> Self::Service {
-        ModifyService::new(service, self.modifier.clone())
+        ModificationService::new(service, self.modifier.clone())
     }
 }
 
-pub trait ModifyLayerExt<T>: Sized {
-    fn layer(self) -> ModifyLayer<Self, T>;
+pub trait ModificationLayerExt: Sized {
+    fn modification_layer<T>(self) -> ModificationLayer<Self, T>;
 }
 
-impl<T, M> ModifyLayerExt<M> for T
+impl<T> ModificationLayerExt for T
 where
     T: Sized + Clone,
 {
-    fn layer(self) -> ModifyLayer<Self, M> {
-        ModifyLayer::new(self)
+    fn modification_layer<M>(self) -> ModificationLayer<Self, M> {
+        ModificationLayer::new(self)
     }
 }

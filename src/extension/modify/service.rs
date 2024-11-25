@@ -5,19 +5,19 @@ use std::{
     task::{Context, Poll},
 };
 
-use http::{Request, StatusCode};
+use http::Request;
 use tower::Service;
 
 use crate::{extract::SealedExtracted, modify::Modifier};
 
 #[derive(Debug, Clone)]
-pub struct ModifyService<S, M, T> {
+pub struct ModificationService<S, M, T> {
     service: S,
     modifier: M,
     _phantom: PhantomData<T>,
 }
 
-impl<S, M, T> ModifyService<S, M, T> {
+impl<S, M, T> ModificationService<S, M, T> {
     pub const fn new(service: S, modifier: M) -> Self {
         Self {
             service,
@@ -27,13 +27,13 @@ impl<S, M, T> ModifyService<S, M, T> {
     }
 }
 
-impl<S, M, B, T> Service<Request<B>> for ModifyService<S, M, T>
+impl<S, M, B, T> Service<Request<B>> for ModificationService<S, M, T>
 where
     M: Modifier<T> + Clone + Send + 'static,
     T: Send + Sync + 'static,
     S: Service<Request<B>> + Clone + Send + 'static,
     S::Future: Send,
-    S::Response: From<M::Error> + From<StatusCode>,
+    S::Response: From<ModificationError<M::Error>>,
     B: Send + 'static,
 {
     type Response = S::Response;
@@ -53,19 +53,50 @@ where
                 Some(SealedExtracted(extracted)) => {
                     match modifier.modify(extracted).await {
                         Ok(modified) => request.extensions_mut().insert(SealedExtracted(modified)),
-                        Err(err) => return Ok(From::from(err)),
+                        Err(err) => return Ok(From::from(ModificationError::Modification(err))),
                     };
                 }
-                None => {
-                    tracing::error!(
-                        "Requested extracted extension was not found. Did you use `Extractor` with `ExtensionLayer`?"
-                    );
-
-                    return Ok(S::Response::from(StatusCode::INTERNAL_SERVER_ERROR));
-                }
+                None => return Ok(From::from(ModificationError::Extract)),
             }
 
             service.call(request).await
         })
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum ModificationError<E> {
+    #[error("Extraction error")]
+    Extract,
+    #[error("Modification error: {0}")]
+    Modification(#[source] E),
+}
+
+#[cfg(feature = "axum")]
+mod axum {
+    use axum::response::{IntoResponse, Response};
+    use http::StatusCode;
+
+    use super::ModificationError;
+
+    impl<E> IntoResponse for ModificationError<E>
+    where
+        E: IntoResponse,
+    {
+        fn into_response(self) -> Response {
+            match self {
+                ModificationError::Extract => (StatusCode::INTERNAL_SERVER_ERROR).into_response(),
+                ModificationError::Modification(err) => err.into_response(),
+            }
+        }
+    }
+
+    impl<E> From<ModificationError<E>> for Response
+    where
+        E: IntoResponse,
+    {
+        fn from(value: ModificationError<E>) -> Self {
+            value.into_response()
+        }
     }
 }

@@ -1,7 +1,8 @@
 mod layer;
+mod modify;
 mod service;
 
 pub use layer::{ExtensionLayer, ExtensionLayerExt};
 pub use service::ExtensionService;
 
-pub mod modify;
+pub use modify::{ModificationLayer, ModificationLayerExt, ModificationService};

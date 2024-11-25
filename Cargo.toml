@@ -99,6 +99,11 @@ name = "or_and"
 path = "examples/or_and.rs"
 required-features = ["axum"]
 
+[[example]]
+name = "jwt_groups"
+path = "examples/jwt_groups.rs"
+required-features = ["axum"]
+
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
