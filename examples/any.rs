@@ -53,7 +53,10 @@ async fn main() -> anyhow::Result<()> {
         DefaultApiKeyAuthorizer::new(DefaultHeaderExtractor::new("z-api-key"), z_valid_api_keys);
 
     // Extractors chained with `any` must all return the same type, which will be returned by the `Any` extractor.
-    let layer = x_authorizer.any(y_authorizer).any(z_authorizer).layer();
+    let layer = x_authorizer
+        .any(y_authorizer)
+        .any(z_authorizer)
+        .extension_layer();
 
     let app = Router::new()
         // curl -H "x-api-key: api-key-1-x" localhost:5000

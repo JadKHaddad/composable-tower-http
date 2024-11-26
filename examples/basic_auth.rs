@@ -33,8 +33,8 @@ async fn main() -> anyhow::Result<()> {
         .map(Into::into)
         .collect();
 
-    let layer =
-        DefaultBasicAuthAuthorizer::new(DefaultBasicAuthExtractor::new(), basic_auth_users).layer();
+    let layer = DefaultBasicAuthAuthorizer::new(DefaultBasicAuthExtractor::new(), basic_auth_users)
+        .extension_layer();
 
     let app = Router::new()
         // curl -u "user-1:password-1" localhost:5000

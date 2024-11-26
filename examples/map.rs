@@ -40,16 +40,16 @@ async fn main() -> anyhow::Result<()> {
     let authorizer =
         DefaultApiKeyAuthorizer::new(DefaultHeaderExtractor::new("x-api-key"), valid_api_keys);
 
-    let layer = authorizer.clone().layer();
+    let layer = authorizer.clone().extension_layer();
 
     let map_layer = authorizer
         .clone()
         .map(|api_key: ApiKey| format!("[mapped {}]", api_key.value))
-        .layer();
+        .extension_layer();
 
     let async_map_layer = authorizer
         .async_map(|api_key: ApiKey| async move { format!("[async mapped {}]", api_key.value) })
-        .layer();
+        .extension_layer();
 
     let app = Router::new()
         // curl -H "x-api-key: api-key-1" localhost:5000

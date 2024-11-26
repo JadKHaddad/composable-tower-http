@@ -59,7 +59,7 @@ async fn main() -> anyhow::Result<()> {
         Validation::new().aud(&["account"]).iss(&[iss]),
     )
     .build::<Claims>()
-    .layer();
+    .extension_layer();
 
     let app = Router::new()
         // curl -H "Authorization: Bearer <token>" localhost:5000

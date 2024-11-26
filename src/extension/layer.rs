@@ -25,14 +25,14 @@ where
 }
 
 pub trait ExtensionLayerExt: Sized {
-    fn layer(self) -> ExtensionLayer<Self>;
+    fn extension_layer(self) -> ExtensionLayer<Self>;
 }
 
 impl<T> ExtensionLayerExt for T
 where
     T: Sized + Clone,
 {
-    fn layer(self) -> ExtensionLayer<Self> {
+    fn extension_layer(self) -> ExtensionLayer<Self> {
         ExtensionLayer::new(self)
     }
 }

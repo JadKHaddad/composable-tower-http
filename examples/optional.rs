@@ -40,9 +40,9 @@ async fn main() -> anyhow::Result<()> {
     let authorizer =
         DefaultApiKeyAuthorizer::new(DefaultHeaderExtractor::new("x-api-key"), valid_api_keys);
 
-    let layer = authorizer.clone().layer();
+    let layer = authorizer.clone().extension_layer();
 
-    let optional_layer = authorizer.clone().optional().layer();
+    let optional_layer = authorizer.clone().optional().extension_layer();
 
     let app = Router::new()
         // curl -H "x-api-key: api-key-1" localhost:5000
