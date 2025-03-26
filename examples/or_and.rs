@@ -93,15 +93,15 @@ async fn main() -> anyhow::Result<()> {
     )
     .build::<Claims>();
 
-    let autorizer = jwt_authorizer.or(api_key_authorizer.and(basic_auth_authorizer));
+    let authorizer = jwt_authorizer.or(api_key_authorizer.and(basic_auth_authorizer));
 
     // If things got too complicated, you can always check the extracted type.
     tracing::debug!(
         "The extracted type name is: {}",
-        autorizer.extracted_type_name()
+        authorizer.extracted_type_name()
     );
 
-    let layer = autorizer.extension_layer();
+    let layer = authorizer.extension_layer();
 
     let app = Router::new()
         // curl -u "user-1:password-1" -H "x-api-key: api-key-1" localhost:5000

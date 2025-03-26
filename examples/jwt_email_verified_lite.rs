@@ -1,7 +1,7 @@
 //! Run with
 //!
 //! ```not_rust
-//! cargo run --example jwt_email_verfied_lite --features="axum"
+//! cargo run --example jwt_email_verified_lite --features="axum"
 //! ```
 //!
 
@@ -45,7 +45,7 @@ async fn claims_email_verified(Extracted(claims): Extracted<Claims>) -> impl Int
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    util::init("jwt_email_verfied_lite")?;
+    util::init("jwt_email_verified_lite")?;
 
     let jwks_uri = std::env::var("JWKS_URI").unwrap_or_else(|_| {
         String::from("https://keycloak.com/realms/master/protocol/openid-connect/certs")

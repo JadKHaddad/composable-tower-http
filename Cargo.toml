@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["Jad K. Haddad <jadkhaddad@gmail.com>"]
 license = "MIT OR Apache-2.0"
 readme = "README.md"
-description = "Highly costumizable http utilities built on top of tower."
+description = "Highly customizable http utilities built on top of tower."
 repository = "https://github.com/JadKHaddad/composable-tower-http"
 keywords = ["tower", "http", "middleware", "extension", "composable"]
 
@@ -60,13 +60,13 @@ path = "examples/jwt.rs"
 required-features = ["axum"]
 
 [[example]]
-name = "jwt_email_verfied"
-path = "examples/jwt_email_verfied.rs"
+name = "jwt_email_verified"
+path = "examples/jwt_email_verified.rs"
 required-features = ["axum"]
 
 [[example]]
-name = "jwt_email_verfied_lite"
-path = "examples/jwt_email_verfied_lite.rs"
+name = "jwt_email_verified_lite"
+path = "examples/jwt_email_verified_lite.rs"
 required-features = ["axum"]
 
 [[example]]

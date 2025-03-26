@@ -1,0 +1,23 @@
+{
+    "version": "0.2",
+    "language": "en",
+    "words": [
+        "Chainer",
+        "docsrs",
+        "dotenv",
+        "dotenvy",
+        "Haddad",
+        "jsonwebtoken",
+        "mockall",
+        "oneshot",
+        "reqwest",
+        "rustdoc",
+        "serde",
+        "thiserror",
+        "impls",
+        "repr"
+    ],
+    "ignorePaths": [
+        "target"
+    ]
+}

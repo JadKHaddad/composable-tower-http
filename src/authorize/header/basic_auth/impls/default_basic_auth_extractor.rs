@@ -12,13 +12,13 @@ use crate::authorize::header::{
 #[derive(Debug)]
 pub struct DefaultBasicAuthExtractor {
     // This is not generic, because we have to make sure that the header name is always "Authorization"
-    header_erxtractor: DefaultHeaderExtractor,
+    header_extractor: DefaultHeaderExtractor,
 }
 
 impl DefaultBasicAuthExtractor {
     pub fn new() -> Self {
         Self {
-            header_erxtractor: DefaultHeaderExtractor::new(Cow::from(AUTHORIZATION.as_str())),
+            header_extractor: DefaultHeaderExtractor::new(Cow::from(AUTHORIZATION.as_str())),
         }
     }
 
@@ -60,7 +60,7 @@ impl BasicAuthExtractor for DefaultBasicAuthExtractor {
     type Error = DefaultBasicAuthError;
 
     fn extract_basic_auth(&self, headers: &HeaderMap) -> Result<(String, String), Self::Error> {
-        let authorization = self.header_erxtractor.extract_header(headers)?;
+        let authorization = self.header_extractor.extract_header(headers)?;
         let (username, password) = Self::extract_encoded_basic(authorization)
             .map(Self::decode)?
             .map(Self::split)??;

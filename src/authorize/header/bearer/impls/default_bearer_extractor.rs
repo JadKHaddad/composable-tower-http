@@ -11,13 +11,13 @@ use crate::authorize::header::{
 #[derive(Debug)]
 pub struct DefaultBearerExtractor {
     // This is not generic, because we have to make sure that the header name is always "Authorization"
-    header_erxtractor: DefaultHeaderExtractor,
+    header_extractor: DefaultHeaderExtractor,
 }
 
 impl DefaultBearerExtractor {
     pub fn new() -> Self {
         Self {
-            header_erxtractor: DefaultHeaderExtractor::new(Cow::from(AUTHORIZATION.as_str())),
+            header_extractor: DefaultHeaderExtractor::new(Cow::from(AUTHORIZATION.as_str())),
         }
     }
 
@@ -42,7 +42,7 @@ impl BearerExtractor for DefaultBearerExtractor {
     type Error = DefaultBearerError;
 
     fn extract_bearer<'a>(&self, headers: &'a HeaderMap) -> Result<&'a str, Self::Error> {
-        let authorization = self.header_erxtractor.extract_header(headers)?;
+        let authorization = self.header_extractor.extract_header(headers)?;
         let bearer_token = Self::extract_bearer(authorization)?;
 
         Ok(bearer_token)

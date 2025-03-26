@@ -43,9 +43,9 @@ impl<Be, P, C> DefaultJwtAuthorizerInner<Be, P, C> {
         let decoding_key =
             DecodingKey::from_jwk(jwk).map_err(DefaultJwtValidationError::DecodingKey)?;
 
-        let jsonwebtoen_validation = self.validation.to_jsonwebtoken_validation(header.alg);
+        let jsonwebtoken_validation = self.validation.to_jsonwebtoken_validation(header.alg);
 
-        let token_data = decode::<C>(jwt, &decoding_key, &jsonwebtoen_validation)
+        let token_data = decode::<C>(jwt, &decoding_key, &jsonwebtoken_validation)
             .map_err(DefaultJwtValidationError::DecodeData)?;
 
         Ok(token_data.claims)
